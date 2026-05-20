@@ -1,0 +1,19 @@
+@keyframes radarPulse {
+  0%   { opacity: 0.4; filter: drop-shadow(0 0 0px transparent); }
+  100% { opacity: 0.8; filter: drop-shadow(0 0 4px rgba(212,168,85,0.2)); }
+}
+
+@keyframes iconPulse {
+  0%   { filter: drop-shadow(0 0 3px var(--accent)); }
+  100% { filter: drop-shadow(0 0 8px var(--accent)); }
+}
+
+@keyframes unboundPulse {
+  0%   { box-shadow: 0 0 0px transparent; }
+  100% { box-shadow: 0 0 6px rgba(200,140,40,0.15); }
+}
+
+@keyframes burdenPulse {
+  0%   { opacity: 0.7; }
+  100% { opacity: 1; }
+}

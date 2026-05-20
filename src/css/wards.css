@@ -1,0 +1,134 @@
+/* Reminder-specific styles */
+.reminder-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 10px; border-radius: 3px;
+  transition: background 0.2s;
+}
+.reminder-item:hover { background: rgba(180,130,40,0.08); }
+.reminder-icon {
+  width: 18px; height: 18px; min-width: 18px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold-dim); font-size: 14px; margin-top: 2px;
+  transition: all 0.3s;
+}
+.reminder-main { flex: 1; min-width: 0; }
+.reminder-text {
+  font-family: 'Crimson Text', serif;
+  font-size: 15px; color: var(--text-primary);
+  line-height: 1.4; word-break: break-word;
+}
+.reminder-time {
+  font-family: 'Cinzel', serif; font-size: 9px;
+  letter-spacing: 0.1em; color: var(--gold-dim);
+  margin-top: 3px; display: flex; align-items: center; gap: 6px;
+}
+.reminder-countdown {
+  font-family: 'Crimson Text', serif; font-style: italic;
+  font-size: 11px; color: #8a7040;
+}
+.reminder-dismiss {
+  font-size: 11px; color: #3a2510; cursor: pointer;
+  padding: 2px 6px; opacity: 0; transition: opacity 0.2s, color 0.2s;
+  margin-left: auto; align-self: center;
+}
+.reminder-edit {
+  font-size: 11px; color: #5a4020; cursor: pointer;
+  padding: 2px 4px; opacity: 0; transition: opacity 0.2s, color 0.2s;
+  align-self: center;
+}
+.reminder-time-edit {
+  font-size: 11px; color: #5a4020; cursor: pointer;
+  padding: 2px 4px; opacity: 0; transition: opacity 0.2s, color 0.2s;
+  align-self: center;
+}
+.reminder-item:hover .reminder-dismiss { opacity: 1 !important; }
+.reminder-item:hover .reminder-edit { opacity: 1 !important; }
+.reminder-item:hover .reminder-time-edit { opacity: 1 !important; }
+.reminder-edit:hover { color: var(--gold-bright) !important; }
+.reminder-time-edit:hover { color: var(--gold-bright) !important; }
+.reminder-dismiss:hover { color: var(--crimson-bright); }
+
+/* Firing state -- pulsing glow */
+.reminder-item.firing {
+  background: rgba(212,160,48,0.12);
+  animation: reminderFire 1s ease-in-out infinite alternate;
+}
+.reminder-item.firing .reminder-icon {
+  color: var(--gold-bright);
+  filter: drop-shadow(0 0 6px rgba(212,168,85,0.6));
+}
+@keyframes reminderFire {
+  0%   { box-shadow: inset 0 0 8px rgba(212,160,48,0.1), 0 0 0px transparent; }
+  100% { box-shadow: inset 0 0 15px rgba(212,160,48,0.2), 0 0 12px rgba(212,160,48,0.08); }
+}
+
+/* Datetime input styling */
+.reminder-add-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid rgba(80,60,20,0.2);
+  flex-wrap: wrap;
+}
+.reminder-add-row input[type="text"] {
+  flex: 1; min-width: 120px; background: transparent; border: none; outline: none;
+  font-family: 'Crimson Text', serif; font-size: 15px;
+  color: var(--text-secondary); font-style: italic;
+}
+.reminder-add-row input[type="text"]::placeholder { color: rgba(140,110,60,0.35); }
+.reminder-add-row input[type="datetime-local"] {
+  background: rgba(15,5,8,0.6); border: 1px solid rgba(140,100,40,0.3);
+  border-radius: 2px; padding: 3px 6px;
+  font-family: 'Crimson Text', serif; font-size: 12px;
+  color: var(--gold-dim); outline: none;
+  transition: border-color 0.2s;
+  color-scheme: dark;
+}
+.reminder-add-row input[type="datetime-local"]:focus {
+  border-color: var(--gold);
+}
+.reminder-add-btn {
+  background: rgba(180,130,40,0.15); border: 1px solid rgba(180,130,40,0.35);
+  border-radius: 2px; padding: 4px 10px; cursor: pointer;
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold-dim); transition: all 0.2s;
+}
+.reminder-add-btn:hover {
+  color: var(--gold-bright); border-color: var(--gold);
+  background: rgba(180,130,40,0.25);
+  box-shadow: 0 0 8px rgba(180,130,40,0.15);
+}
+
+.no-wards {
+  padding: 12px 14px;
+  font-family: 'Crimson Text', serif; font-size: 13.5px;
+  color: #5a4030; font-style: italic; text-align: center;
+  letter-spacing: 0.05em;
+}
+
+/* Quick-time shortcut buttons */
+.quick-times {
+  display: flex; gap: 4px; flex-wrap: wrap; align-items: center;
+  padding: 0;
+}
+.quick-time-btn {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(140,100,40,0.25);
+  background: rgba(140,100,40,0.08);
+  color: var(--gold-dim); transition: all 0.2s;
+}
+.quick-time-btn:hover {
+  color: var(--gold-bright); border-color: var(--gold);
+  background: rgba(140,100,40,0.18);
+  box-shadow: 0 0 6px rgba(140,100,40,0.12);
+}
+.quick-time-btn.active {
+  color: var(--gold-bright); border-color: var(--gold);
+  background: rgba(140,100,40,0.22);
+}
+.custom-dt-wrap {
+  display: none; align-items: center; gap: 6px;
+}
+.custom-dt-wrap.visible { display: flex; }

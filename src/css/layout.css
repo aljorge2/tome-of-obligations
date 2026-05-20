@@ -1,0 +1,160 @@
+.content {
+  position: relative;
+  z-index: 7;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.header-ornament {
+  text-align: center;
+  margin-bottom: 0.4rem;
+  color: var(--gold-dim);
+  font-size: 14px;
+  letter-spacing: 1em;
+  opacity: 0.5;
+}
+
+.page-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+  text-shadow: 0 0 20px rgba(212, 168, 85, 0.25), 0 0 40px rgba(212, 168, 85, 0.08);
+  animation: titleGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  0%   { text-shadow: 0 0 15px rgba(212,168,85,0.15), 0 0 35px rgba(212,168,85,0.04); }
+  100% { text-shadow: 0 0 28px rgba(212,168,85,0.4),  0 0 55px rgba(212,168,85,0.14), 0 0 80px rgba(180,100,40,0.06); }
+}
+
+.page-subtitle {
+  font-family: 'Crimson Text', serif;
+  font-size: 13.5px;
+  color: #8a6070;
+  text-align: center;
+  letter-spacing: 0.2em;
+  margin-bottom: 0.6rem;
+  font-style: italic;
+}
+
+/* ─── Tally Display ─── */
+.tally-bar {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-family: 'Cinzel', serif;
+  font-size: 9.5px;
+  letter-spacing: 0.15em;
+  color: var(--gold-dim);
+  opacity: 0.7;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+.tally-item {
+  display: flex; align-items: center; gap: 5px;
+}
+.tally-num {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(212,168,85,0.2);
+}
+.tally-label {
+  text-transform: uppercase;
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent 5%, var(--gold-dim) 30%, var(--gold) 50%, var(--gold-dim) 70%, transparent 95%);
+  opacity: 0.35;
+  margin-bottom: 2rem;
+  position: relative;
+}
+.divider::before {
+  content: '\25C6';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--gold);
+  font-size: 7px;
+  background: var(--bg-deepest);
+  padding: 0 10px;
+  opacity: 0.6;
+}
+
+/* ─── Tab Navigation ─── */
+.tome-tabs {
+  display: flex; justify-content: center; gap: 4px;
+  margin-bottom: 1.2rem;
+}
+.tome-tab {
+  font-family: 'Cinzel', serif; font-weight: 600;
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 6px 18px; cursor: pointer;
+  border: 1px solid rgba(140,60,80,0.2);
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  background: rgba(15,5,10,0.5);
+  color: var(--text-muted);
+  transition: all 0.3s;
+  position: relative;
+}
+.tome-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(20,8,14,0.7);
+  border-color: rgba(140,60,80,0.35);
+}
+.tome-tab.active {
+  color: var(--gold);
+  background: var(--bg-card);
+  border-color: rgba(140,60,80,0.35);
+  box-shadow: 0 -2px 10px rgba(212,168,85,0.06);
+}
+.tome-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+  opacity: 0.5;
+}
+
+/* Page containers */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ─── Export / Import ─── */
+.tome-utils {
+  display: flex; justify-content: center; gap: 8px;
+  margin-top: 0.8rem; margin-bottom: 0.5rem;
+}
+.tome-util-btn {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted); cursor: pointer;
+  padding: 3px 8px; border: 1px solid rgba(100,40,55,0.2);
+  border-radius: 2px; background: rgba(20,5,10,0.3);
+  transition: all 0.2s;
+}
+.tome-util-btn:hover { color: var(--text-secondary); border-color: rgba(140,60,80,0.35); }
+
+/* Corner ornaments */
+.corners-wrap { position: relative; }
+.corner { position: absolute; width: 12px; height: 12px; opacity: 0.3; }
+.corner-tl { top: 0; left: 0; border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); }
+.corner-tr { top: 0; right: 0; border-top: 1px solid var(--gold); border-right: 1px solid var(--gold); }
+.corner-bl { bottom: 0; left: 0; border-bottom: 1px solid var(--gold); border-left: 1px solid var(--gold); }
+.corner-br { bottom: 0; right: 0; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); }
+
+.footer-ornament {
+  text-align: center; margin-top: 1.5rem;
+  color: var(--gold-dim); font-size: 10px;
+  letter-spacing: 0.8em; opacity: 0.25;
+}

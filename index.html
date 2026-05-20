@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tome of Obligations</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="./src/css/main.css">
+</head>
+<body>
+<div class="grimoire">
+  <canvas id="fog" class="bg-canvas"></canvas>
+  <canvas id="particles" class="bg-canvas"></canvas>
+  <canvas id="runes" class="bg-canvas"></canvas>
+  <canvas id="orbs" class="bg-canvas"></canvas>
+  <canvas id="celebration"></canvas>
+  <div id="candlelight"></div>
+  <div id="spell-flash" style="position:fixed;inset:0;pointer-events:none;z-index:49;opacity:0;transition:opacity 0.15s;"></div>
+
+  <div class="content corners-wrap">
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <div class="header-ornament">&#x2014; &#x2726; &#x2014;</div>
+    <div class="page-title">Tome of Obligations</div>
+    <div class="page-subtitle">~ tasks bound in shadow &amp; purpose ~</div>
+
+    <!-- Self-Care Strip -->
+    <div class="selfcare-strip" id="selfcare-strip">
+      <div class="selfcare-item" data-care="water">
+        <i class="ti ti-droplet selfcare-icon off" id="care-water-icon"></i>
+        <span class="selfcare-label">water</span>
+        <span class="selfcare-streak" id="care-water-streak"></span>
+      </div>
+      <div class="selfcare-item" data-care="breakfast">
+        <i class="ti ti-egg selfcare-icon off" id="care-breakfast-icon"></i>
+        <span class="selfcare-label">brkfst</span>
+      </div>
+      <div class="selfcare-item" data-care="lunch">
+        <i class="ti ti-salad selfcare-icon off" id="care-lunch-icon"></i>
+        <span class="selfcare-label">lunch</span>
+      </div>
+      <div class="selfcare-item" data-care="dinner">
+        <i class="ti ti-soup selfcare-icon off" id="care-dinner-icon"></i>
+        <span class="selfcare-label">dinner</span>
+      </div>
+      <div class="selfcare-item" data-care="sleep">
+        <i class="ti ti-moon selfcare-icon off" id="care-sleep-icon"></i>
+        <span class="selfcare-label">sleep</span>
+      </div>
+    </div>
+
+    <div class="tally-bar">
+      <div class="tally-item"><span class="tally-num" id="tally-today">0</span><span class="tally-label">sealed today</span></div>
+      <div class="tally-item"><span class="tally-num" id="tally-week">0</span><span class="tally-label">this week</span></div>
+    </div>
+    <div class="scry-trigger" id="scry-trigger">
+      <i class="ti ti-eye" style="font-size:13px"></i> Scry
+    </div>
+    <div class="scry-nudge" id="scry-nudge">
+      <span class="scry-nudge-icon"><i class="ti ti-eye"></i></span>
+      <span class="scry-nudge-text" id="scry-nudge-text"></span>
+      <span class="scry-nudge-dismiss" id="scry-nudge-dismiss"><i class="ti ti-x"></i></span>
+    </div>
+    <hr class="divider">
+
+    <!-- Tab navigation -->
+    <div class="tome-tabs">
+      <div class="tome-tab active" data-page="work">Work Grimoire <span class="tab-badge" id="badge-work"></span></div>
+      <div class="tome-tab" data-page="hearth">Hearthstone <span class="tab-badge" id="badge-hearth"></span></div>
+    </div>
+
+    <!-- Today's Focus -->
+    <div class="focus-panel" id="focus-panel">
+      <div class="focus-header" id="focus-header">
+        <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+        <i class="ti ti-eye" style="font-size:14px;color:#d06888;filter:drop-shadow(0 0 4px rgba(208,104,136,0.3))"></i>
+        <span class="focus-title">Today's Focus</span>
+        <span id="rescry-btn" style="margin-left:auto;font-family:Cinzel,serif;font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-dim);cursor:pointer;padding:2px 8px;border:1px solid rgba(212,168,85,0.2);border-radius:2px;transition:all 0.2s" title="Change your sworn oaths"><i class="ti ti-refresh" style="font-size:10px"></i> re-scry</span>
+      </div>
+      <div class="focus-body" id="focus-body"></div>
+      <div class="lockin-card" id="lockin-card"></div>
+      <div class="lockin-timer" id="lockin-timer"></div>
+    </div>
+
+    <!-- Wards & Reminders (shared across pages) -->
+    <div class="section section-wards" data-sec="wards">
+      <div class="section-header">
+        <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+        <i class="ti ti-bell-ringing section-icon" aria-hidden="true"></i>
+        <span class="section-title">Wards &amp; Reminders</span>
+        <span class="section-count" id="wards-count"></span>
+      </div>
+      <div id="wards-list"></div>
+      <div class="reminder-add-row">
+        <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
+        <input type="text" id="ward-text" placeholder="set a ward…" />
+        <div class="quick-times">
+          <span class="quick-time-btn" data-mins="30">30m</span>
+          <span class="quick-time-btn" data-mins="60">1h</span>
+          <span class="quick-time-btn" data-mins="180">3h</span>
+          <span class="quick-time-btn" data-mins="tomorrow">9am</span>
+          <span class="quick-time-btn" data-mins="custom">custom</span>
+          <span class="quick-time-btn" id="ward-page-toggle" data-page="work">work</span>
+        </div>
+        <div class="custom-dt-wrap" id="custom-dt-wrap">
+          <input type="datetime-local" id="ward-datetime" />
+        </div>
+        <button class="reminder-add-btn" id="ward-add-btn">Bind</button>
+      </div>
+    </div>
+
+    <!-- WORK PAGE -->
+    <div class="page active" id="page-work">
+      <div class="section section-lab" data-sec="lab">
+        <div class="section-header">
+          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+          <i class="ti ti-flask section-icon" aria-hidden="true"></i>
+          <span class="section-title">Lab Manager</span>
+          <span class="section-count" id="lab-count"></span>
+          <span class="clear-done-btn" id="lab-clear" data-section="lab">purge sealed</span>
+        </div>
+        <div class="burden-bar" id="lab-burden"></div>
+        <div class="tasks" id="lab-tasks"></div>
+        <div class="add-row">
+          <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
+          <input class="add-input" placeholder="inscribe a new task…" data-section="lab" />
+        </div>
+      </div>
+
+      <div class="section section-bio" data-sec="bio">
+        <div class="section-header">
+          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+          <i class="ti ti-dna section-icon" aria-hidden="true"></i>
+          <span class="section-title">Bioinfo</span>
+          <span class="section-count" id="bio-count"></span>
+          <span class="clear-done-btn" id="bio-clear" data-section="bio">purge sealed</span>
+        </div>
+        <div class="burden-bar" id="bio-burden"></div>
+        <div class="tasks" id="bio-tasks"></div>
+        <div class="add-row">
+          <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
+          <input class="add-input" placeholder="inscribe a new task…" data-section="bio" />
+        </div>
+      </div>
+
+      <div class="section section-time" data-sec="time">
+        <div class="section-header">
+          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+          <i class="ti ti-hourglass section-icon" aria-hidden="true"></i>
+          <span class="section-title">If Time</span>
+          <span class="section-count" id="time-count"></span>
+          <span class="clear-done-btn" id="time-clear" data-section="time">purge sealed</span>
+        </div>
+        <div class="burden-bar" id="time-burden"></div>
+        <div class="tasks" id="time-tasks"></div>
+        <div class="add-row">
+          <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
+          <input class="add-input" placeholder="inscribe a new task…" data-section="time" />
+        </div>
+      </div>
+    </div>
+
+    <!-- HEARTH PAGE -->
+    <div class="page" id="page-hearth">
+      <!-- Life Radar -->
+      <div class="life-radar" id="life-radar">
+        <i class="ti ti-compass radar-icon"></i>
+        <span class="radar-text" id="radar-text"></span>
+      </div>
+
+      <!-- Recurring Templates -->
+      <div class="templates-section" id="templates-section">
+        <div class="templates-header" id="templates-header">
+          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+          <i class="ti ti-repeat" style="font-size:11px;color:var(--gold-dim)"></i>
+          <span class="templates-title">Recurring Rituals</span>
+        </div>
+        <div class="templates-body">
+          <div id="templates-list"></div>
+          <div class="template-add-row">
+            <input class="template-add-input" id="template-text" placeholder="add a recurring task…" />
+            <select class="template-cadence-select" id="template-cadence">
+              <option value="daily">Daily</option>
+              <option value="weekly" selected>Weekly</option>
+              <option value="biweekly">Biweekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <select class="template-cadence-select" id="template-target">
+              <option value="hearth">Hearth</option>
+              <option value="scrolls">Scrolls</option>
+              <option value="forge">Forge</option>
+              <option value="bonds">Bonds</option>
+            </select>
+            <span class="template-add-btn" id="template-add-btn">+</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section section-lab" data-sec="hearth">
+        <div class="section-header">
+          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+          <i class="ti ti-home section-icon" aria-hidden="true"></i>
+          <span class="section-title">Hearthkeeping</span>
+          <span class="section-count" id="hearth-count"></span>
+          <span class="clear-done-btn" id="hearth-clear" data-section="hearth">purge sealed</span>
+        </div>
+        <div class="burden-bar" id="hearth-burden"></div>
+        <div class="tasks" id="hearth-tasks"></div>
+        <div class="add-row">
+          <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
+          <input class="add-input" placeholder="inscribe a new task…" data-section="hearth" />
+        </div>
+      </div>
+
+      <div class="section section-bio" data-sec="scrolls">
+        <div class="section-header">
+          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+          <i class="ti ti-scroll section-icon" aria-hidden="true"></i>
+          <span class="section-title">Scrolls &amp; Seals</span>
+          <span class="section-count" id="scrolls-count"></span>
+          <span class="clear-done-btn" id="scrolls-clear" data-section="scrolls">purge sealed</span>
+        </div>
+        <div class="burden-bar" id="scrolls-burden"></div>
+        <div class="tasks" id="scrolls-tasks"></div>
+        <div class="add-row">
+          <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
+          <input class="add-input" placeholder="inscribe a new task…" data-section="scrolls" />
+        </div>
+      </div>
+
+      <div class="section section-time" data-sec="forge">
+        <div class="section-header">
+          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+          <i class="ti ti-hammer section-icon" aria-hidden="true"></i>
+          <span class="section-title">The Forge</span>
+          <span class="section-count" id="forge-count"></span>
+          <span class="clear-done-btn" id="forge-clear" data-section="forge">purge sealed</span>
+        </div>
+        <div class="burden-bar" id="forge-burden"></div>
+        <div class="tasks" id="forge-tasks"></div>
+        <div class="add-row">
+          <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
+          <input class="add-input" placeholder="inscribe a new task…" data-section="forge" />
+        </div>
+      </div>
+
+      <div class="section section-bonds" data-sec="bonds">
+        <div class="section-header">
+          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+          <i class="ti ti-heart-handshake section-icon" aria-hidden="true"></i>
+          <span class="section-title">Bonds &amp; Oaths</span>
+          <span class="section-count" id="bonds-count"></span>
+          <span class="clear-done-btn" id="bonds-clear" data-section="bonds">purge sealed</span>
+        </div>
+        <div class="burden-bar" id="bonds-burden"></div>
+        <div class="tasks" id="bonds-tasks"></div>
+        <div class="add-row">
+          <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
+          <input class="add-input" placeholder="inscribe a new task…" data-section="bonds" />
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-ornament">&#x2E3A; &#x25C7; &#x2E3A;</div>
+
+    <!-- Sealed Archive -->
+    <div class="archive-panel" id="archive-panel">
+      <div class="archive-header" id="archive-header">
+        <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
+        <i class="ti ti-book" style="font-size:11px;color:#5a3a45"></i>
+        <span class="archive-title">Sealed Archive</span>
+      </div>
+      <div class="archive-body" id="archive-body"></div>
+    </div>
+
+    <div class="tome-utils">
+      <span class="tome-util-btn" id="btn-review"><i class="ti ti-report" style="font-size:10px"></i> Weekly Review</span>
+      <span class="tome-util-btn" id="btn-export"><i class="ti ti-download" style="font-size:10px"></i> Transcribe</span>
+      <span class="tome-util-btn" id="btn-import"><i class="ti ti-upload" style="font-size:10px"></i> Restore</span>
+      <input type="file" id="import-file" accept=".json" style="display:none" />
+    </div>
+  </div>
+</div>
+
+<!-- Scry Overlay -->
+<div class="scry-overlay" id="scry-overlay">
+  <div class="scry-content">
+    <div class="scry-title">Scry</div>
+    <div class="scry-subtitle">~ gaze into the tome's depths ~</div>
+
+    <!-- Step 1: Reflect -->
+    <div class="scry-step active" id="scry-step-1">
+      <div class="scry-section">
+        <div class="scry-section-title">This Session</div>
+        <div class="scry-stat"><span>Sealed today</span><span class="scry-stat-num" id="scry-today">0</span></div>
+        <div class="scry-stat"><span>Sealed this week</span><span class="scry-stat-num" id="scry-week">0</span></div>
+      </div>
+      <div class="scry-section">
+        <div class="scry-section-title">Burden</div>
+        <div id="scry-burden-stats"></div>
+      </div>
+      <div class="scry-section">
+        <div class="scry-section-title">Oldest Open Tasks</div>
+        <div class="scry-task-list" id="scry-oldest"></div>
+      </div>
+      <div class="scry-section">
+        <div class="scry-section-title">Unbound Tasks</div>
+        <div class="scry-task-list" id="scry-unbound"></div>
+      </div>
+      <div class="scry-section" id="scry-patterns-section" style="display:none">
+        <div class="scry-section-title">Recurring Patterns</div>
+        <p style="font-family:'Crimson Text',serif;font-size:12px;color:#8a7050;font-style:italic;margin-bottom:6px;">
+          The tome noticed you keep adding these. Want to make them rituals?
+        </p>
+        <div id="scry-patterns"></div>
+      </div>
+      <div class="scry-section" id="scry-shadows-section" style="display:none">
+        <div class="scry-section-title">Lingering Shadows</div>
+        <p style="font-family:'Crimson Text',serif;font-size:12px;color:#8a5040;font-style:italic;margin-bottom:6px;">
+          These tasks have been untouched — no focus time, no checklist progress. Are they still needed?
+        </p>
+        <div id="scry-shadows"></div>
+      </div>
+      <div class="scry-nav">
+        <button class="scry-btn scry-btn-secondary" id="scry-close-1">Close</button>
+        <button class="scry-btn scry-btn-primary" id="scry-next-1">Brain Dump <i class="ti ti-arrow-right" style="font-size:11px"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 1.5: Brain Dump -->
+    <div class="scry-step" id="scry-step-dump">
+      <div class="scry-section">
+        <div class="scry-section-title">Brain Dump</div>
+        <p style="font-family:'Crimson Text',serif;font-size:13px;color:#8a6070;font-style:italic;margin-bottom:1rem;">
+          Empty your mind. For each area, write down anything that comes to you. Hit Enter to add, then keep going. Skip what's empty.
+        </p>
+
+        <div class="dump-section">
+          <div class="dump-label" style="color:#9b50e0"><i class="ti ti-home" style="font-size:11px"></i> Hearthkeeping</div>
+          <div class="dump-prompt">Does anything need cleaning, fixing, restocking?</div>
+          <input class="dump-input" data-dump-sec="hearth" placeholder="type and hit enter…" />
+          <div class="dump-added" data-dump-msg="hearth"></div>
+        </div>
+
+        <div class="dump-section">
+          <div class="dump-label" style="color:#3da855"><i class="ti ti-scroll" style="font-size:11px"></i> Scrolls &amp; Seals</div>
+          <div class="dump-prompt">Any appointments, forms, bills, or paperwork?</div>
+          <input class="dump-input" data-dump-sec="scrolls" placeholder="type and hit enter…" />
+          <div class="dump-added" data-dump-msg="scrolls"></div>
+        </div>
+
+        <div class="dump-section">
+          <div class="dump-label" style="color:#2899bb"><i class="ti ti-hammer" style="font-size:11px"></i> The Forge</div>
+          <div class="dump-prompt">Anything you've been wanting to do for yourself? Hobbies, goals, trips?</div>
+          <input class="dump-input" data-dump-sec="forge" placeholder="type and hit enter…" />
+          <div class="dump-added" data-dump-msg="forge"></div>
+        </div>
+
+        <div class="dump-section">
+          <div class="dump-label" style="color:#d08838"><i class="ti ti-heart-handshake" style="font-size:11px"></i> Bonds &amp; Oaths</div>
+          <div class="dump-prompt">Does anyone need something from you? Payton, family, friends?</div>
+          <input class="dump-input" data-dump-sec="bonds" placeholder="type and hit enter…" />
+          <div class="dump-added" data-dump-msg="bonds"></div>
+        </div>
+      </div>
+      <div class="scry-nav">
+        <button class="scry-btn scry-btn-secondary" id="scry-back-dump"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>
+        <button class="scry-btn scry-btn-primary" id="scry-next-dump">Check In <i class="ti ti-arrow-right" style="font-size:11px"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 1.75: Self-Care Check-in & Struggles -->
+    <div class="scry-step" id="scry-step-checkin">
+      <div class="scry-section">
+        <div class="scry-section-title">Body &amp; Spirit</div>
+        <p style="font-family:'Crimson Text',serif;font-size:13px;color:#8a6070;font-style:italic;margin-bottom:0.6rem;">
+          How did you take care of yourself today? Just tap what you did.
+        </p>
+        <div id="scry-selfcare-checkin"></div>
+      </div>
+      <div class="scry-section">
+        <div class="scry-section-title">What Drained You?</div>
+        <p style="font-family:'Crimson Text',serif;font-size:12px;color:#8a5040;font-style:italic;margin-bottom:0.5rem;">
+          Name what was hard. The tome watches for patterns.
+        </p>
+        <textarea class="struggles-input" id="scry-struggles" placeholder="what drained your energy today? what felt hard?"></textarea>
+        <div id="scry-struggles-patterns"></div>
+      </div>
+      <div class="scry-nav">
+        <button class="scry-btn scry-btn-secondary" id="scry-back-checkin"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>
+        <button class="scry-btn scry-btn-primary" id="scry-next-checkin">Commit Oaths <i class="ti ti-arrow-right" style="font-size:11px"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 2: Commit sworn oaths -->
+    <div class="scry-step" id="scry-step-2">
+      <div class="scry-section">
+        <div class="scry-section-title">The Tome Recommends</div>
+        <p style="font-family:'Crimson Text',serif;font-size:13px;color:#8a6070;font-style:italic;margin-bottom:0.8rem;">
+          These oaths were chosen for you. Accept them, or swap any that don't feel right.
+        </p>
+        <div class="scry-pick-label work-label">Work Grimoire</div>
+        <div id="scry-rec-work"></div>
+
+        <div class="scry-pick-label hearth-label" style="margin-top:1rem">Hearthstone</div>
+        <div id="scry-rec-hearth"></div>
+      </div>
+      <div class="scry-nav">
+        <button class="scry-btn scry-btn-secondary" id="scry-back-2"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>
+        <button class="scry-btn scry-btn-secondary" id="scry-reshuffle"><i class="ti ti-refresh" style="font-size:11px"></i> Reshuffle</button>
+        <button class="scry-btn scry-btn-primary" id="scry-commit-2">Seal Oaths</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Thought Catcher -->
+<div class="thought-catcher" id="thought-catcher">
+  <div class="tc-panel" id="tc-panel">
+    <div class="tc-label">Stray Thought</div>
+    <input class="tc-input" id="tc-input" placeholder="capture it before it escapes…" />
+    <div class="tc-hint">Hit enter &#x2014; it'll be sorted into the right section</div>
+    <div class="tc-confirm" id="tc-confirm"></div>
+  </div>
+  <div class="tc-toggle" id="tc-toggle">
+    <i class="ti ti-bolt"></i>
+  </div>
+</div>
+
+<!-- Breakdown Modal -->
+<div class="breakdown-overlay" id="breakdown-overlay">
+  <div class="breakdown-card">
+    <div class="breakdown-title">Break It Down</div>
+    <div class="breakdown-task-name" id="bd-task-name"></div>
+    <div class="breakdown-q" id="bd-question">What's the very first step you'd take?</div>
+    <input class="breakdown-input" id="bd-input" placeholder="e.g. open email, find the form, call the number…" />
+    <div class="breakdown-steps" id="bd-steps"></div>
+    <div class="breakdown-nav">
+      <span class="breakdown-done-btn" id="bd-done">Done</span>
+    </div>
+  </div>
+</div>
+
+<!-- Weekly Review Overlay -->
+<div class="review-overlay" id="review-overlay">
+  <div class="review-content">
+    <div class="review-title">Weekly Parchment</div>
+    <div class="review-subtitle">~ a record of the week that was ~</div>
+    <div class="review-stat-grid" id="review-stats"></div>
+    <div id="review-body"></div>
+    <div class="scry-nav" style="margin-top:1.2rem">
+      <button class="scry-btn scry-btn-secondary" id="review-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

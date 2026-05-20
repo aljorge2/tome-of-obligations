@@ -1,0 +1,224 @@
+/* ─── Today's Focus Panel ─── */
+.focus-panel {
+  background: rgba(10,3,8,0.75);
+  border: 1px solid rgba(208,104,136,0.25);
+  border-radius: 3px;
+  margin-bottom: 1.5rem;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+.focus-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(160,60,90,0.3), #d06888, rgba(160,60,90,0.3));
+  opacity: 0.6;
+}
+.focus-header {
+  padding: 0.7rem 1rem 0.5rem;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid rgba(212,168,85,0.1);
+  cursor: pointer; user-select: none;
+}
+.focus-header .collapse-arrow {
+  font-size: 10px; color: #d06888;
+  transition: transform 0.3s;
+}
+.focus-panel.collapsed .focus-header .collapse-arrow { transform: rotate(-90deg); }
+.focus-panel.collapsed .focus-body { display: none; }
+.focus-title {
+  font-family: 'Cinzel', serif; font-weight: 600;
+  font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: #d06888;
+}
+.focus-body { padding: 0.5rem 0.8rem 0.7rem; }
+.focus-empty {
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  color: #5a4030; font-style: italic; text-align: center;
+  padding: 6px 0;
+}
+.focus-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 2px;
+  transition: background 0.2s; cursor: default;
+}
+.focus-item:hover { background: rgba(212,168,85,0.06); }
+.focus-section-dot {
+  width: 6px; height: 6px; min-width: 6px;
+  border-radius: 50%;
+}
+.focus-item-text {
+  font-family: 'Crimson Text', serif; font-size: 14px;
+  color: var(--text-primary); flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.focus-item-source {
+  font-family: 'Cinzel', serif; font-size: 7px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-muted); white-space: nowrap;
+}
+.focus-item-age {
+  font-family: 'Crimson Text', serif; font-size: 10px;
+  color: #6a4a55; font-style: italic;
+}
+
+/* Focus panel sequence numbers */
+.focus-seq {
+  font-family: 'Cinzel Decorative', serif; font-weight: 700;
+  font-size: 11px; color: #d06888; min-width: 14px; text-align: center;
+  text-shadow: 0 0 6px rgba(208,104,136,0.2);
+}
+
+/* Begin / Release buttons on focus items */
+.focus-begin-btn {
+  font-family: 'Cinzel', serif; font-size: 7px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(208,104,136,0.3);
+  color: #d06888; background: rgba(208,104,136,0.08);
+  transition: all 0.2s; white-space: nowrap;
+}
+.focus-begin-btn:hover {
+  background: rgba(208,104,136,0.18);
+  box-shadow: 0 0 6px rgba(208,104,136,0.12);
+}
+.focus-release-btn {
+  font-family: 'Cinzel', serif; font-size: 7px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(212,168,85,0.3);
+  color: var(--gold); background: rgba(212,168,85,0.08);
+  transition: all 0.2s; white-space: nowrap;
+}
+.focus-release-btn:hover {
+  background: rgba(212,168,85,0.18);
+  box-shadow: 0 0 6px rgba(212,168,85,0.12);
+}
+
+/* One-at-a-time: hide peek toggle */
+.focus-peek-btn {
+  font-family: 'Crimson Text', serif; font-size: 11px;
+  color: var(--text-muted); cursor: pointer;
+  font-style: italic; text-align: center;
+  padding: 2px 0; transition: color 0.2s;
+}
+.focus-peek-btn:hover { color: var(--text-secondary); }
+
+/* ─── Lock-in Mode ─── */
+.grimoire.locked-in .section,
+.grimoire.locked-in .tome-tabs,
+.grimoire.locked-in .scry-trigger,
+.grimoire.locked-in .tome-utils,
+.grimoire.locked-in .footer-ornament,
+.grimoire.locked-in .life-radar,
+.grimoire.locked-in .templates-section,
+.grimoire.locked-in .section-wards {
+  opacity: 0.15;
+  pointer-events: none;
+  filter: blur(1px);
+  transition: opacity 0.5s, filter 0.5s;
+}
+.grimoire.locked-in .focus-panel {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  filter: none !important;
+  border-color: rgba(208,104,136,0.4);
+  box-shadow: 0 0 30px rgba(208,104,136,0.1), 0 4px 25px rgba(0,0,0,0.5);
+  transition: all 0.4s ease;
+}
+
+/* Focus item in lock-in: dim non-active */
+.focus-item.locked-dim {
+  opacity: 0.2;
+  filter: blur(1px);
+  transition: opacity 0.4s, filter 0.4s;
+}
+.focus-item.locked-active {
+  background: rgba(208,104,136,0.06);
+  border-left: 2px solid #d06888;
+  padding-left: 6px;
+  transition: all 0.3s;
+}
+
+/* Expanded lock-in card */
+.lockin-card {
+  display: none;
+  padding: 1rem 1.2rem 0.8rem;
+  border-top: 1px solid rgba(208,104,136,0.15);
+  animation: fadeRise 0.3s ease-out;
+}
+.grimoire.locked-in .lockin-card { display: block; }
+.lockin-card-title {
+  font-family: 'Cinzel Decorative', serif; font-weight: 700;
+  font-size: 16px; color: var(--text-primary);
+  text-align: center; margin-bottom: 4px;
+  text-shadow: 0 0 12px rgba(208,104,136,0.15);
+  line-height: 1.3;
+}
+.lockin-card-source {
+  font-family: 'Cinzel', serif; font-size: 8px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  text-align: center; margin-bottom: 0.8rem;
+}
+.lockin-card-note {
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  font-style: italic; color: #8a6a75;
+  padding: 6px 10px; margin-bottom: 0.6rem;
+  background: rgba(15,5,10,0.3);
+  border-left: 2px solid rgba(208,104,136,0.2);
+  border-radius: 0 2px 2px 0;
+  line-height: 1.4;
+}
+.lockin-card-checklist {
+  display: flex; flex-direction: column; gap: 3px;
+  margin-bottom: 0.5rem;
+}
+.lockin-check-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 8px; border-radius: 2px; cursor: pointer;
+  transition: background 0.15s;
+  font-family: 'Crimson Text', serif; font-size: 14px;
+  color: var(--text-secondary);
+}
+.lockin-check-row:hover { background: rgba(208,104,136,0.06); }
+.lockin-check-box {
+  width: 14px; height: 14px; min-width: 14px;
+  border: 1px solid rgba(208,104,136,0.35); border-radius: 2px;
+  background: rgba(25,4,10,0.9);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: transparent; transition: all 0.2s;
+}
+.lockin-check-row.done .lockin-check-box {
+  color: #d06888; border-color: #d06888;
+  box-shadow: 0 0 4px rgba(208,104,136,0.3);
+}
+.lockin-check-row.done .lockin-check-label {
+  text-decoration: line-through; color: #4a2a35;
+}
+.lockin-card-seal {
+  display: flex; justify-content: center; margin-top: 0.6rem;
+}
+.lockin-seal-btn {
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 6px 20px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(60,168,85,0.35);
+  color: #3da855; background: rgba(60,168,85,0.08);
+  transition: all 0.25s;
+}
+.lockin-seal-btn:hover {
+  background: rgba(60,168,85,0.18);
+  box-shadow: 0 0 10px rgba(60,168,85,0.12);
+}
+
+/* Lock-in timer */
+.lockin-timer {
+  text-align: center; padding: 4px 0 2px;
+  font-family: 'Cinzel', serif; font-size: 10px;
+  letter-spacing: 0.12em; color: #d06888;
+  opacity: 0.6;
+  display: none;
+}
+.grimoire.locked-in .lockin-timer { display: block; }
