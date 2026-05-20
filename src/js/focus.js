@@ -15,8 +15,12 @@ import {
 } from './state.js';
 import { miniSparkBurst, spellSealBurst, pomodoroBurst } from './canvas/index.js';
 import { on } from './events.js';
+import { ambientHTML, attachAmbientHandlers, resumeAmbient, stopAllAmbient } from './ambient.js';
 import { renderSection, checkSectionCleared } from './tasks.js';
 import { generateRecommendations, scoreTask } from './scry.js';
+import { showTaskTransition } from './transitions.js';
+import { savePaytonMessage } from './energy.js';
+import { assessUrgency, weightedScore, getTimeContext } from './urgency.js';
 
 export function updateFocusPanel(){
   const body = document.getElementById('focus-body');
@@ -37,14 +41,32 @@ export function updateFocusPanel(){
     return;
   }
 
-  // Check for sworn oaths — filter to current page only
+  // Show "Begin Your Day" CTA when no sworn oaths exist
+  if(!(state.swornOaths || []).length){
+    body.innerHTML = `<div class="begin-day-cta" id="begin-day-cta">
+      <div class="begin-day-icon"><i class="ti ti-sunrise"></i></div>
+      <div class="begin-day-title">Begin Your Day</div>
+      <div class="begin-day-sub">Scry the tome to set your oaths</div>
+    </div>
+    <div class="focus-auto-hint" style="text-align:center;font-family:Crimson Text,serif;font-size:11px;color:#6a4a55;font-style:italic;margin-top:6px;padding:0 8px">or browse auto-ranked tasks below</div>`;
+    document.getElementById('begin-day-cta')?.addEventListener('click', () => {
+      document.getElementById('scry-trigger')?.click();
+    });
+    // Still show auto-ranked tasks below the CTA
+  }
+
+  // Check for sworn oaths — show ALL sworn oaths regardless of active tab
   const sworn = state.swornOaths || [];
-  const pageSecSet = new Set(pageSecs);
   const swornTasks = [];
   if(sworn.length){
     sworn.forEach(id => {
-      const t = allTasks.find(t => t.id === id);
-      if(t && pageSecSet.has(t.sec)) swornTasks.push(t);
+      // Search all sections for sworn oaths (not just current page)
+      let found = null;
+      ALL_SECTIONS.forEach(sec => {
+        const t = (state[sec]||[]).find(t => t.id === id);
+        if(t && !t.done) found = {...t, sec};
+      });
+      if(found) swornTasks.push(found);
     });
   }
 
@@ -62,13 +84,41 @@ export function updateFocusPanel(){
       if(info) t._reason = info.reason;
     });
   } else {
-    allTasks.forEach(t => {
-      const s = scoreTask(t);
-      t._score = s.score;
-      t._reason = s.reason;
+    // Cross-tab scoring: pull from ALL sections (not just active page)
+    // with time-of-day weighting so life tasks surface in evenings
+    // Weekends: exclude work tasks entirely (user's boundary)
+    const isWeekendNow = [0, 6].includes(new Date().getDay());
+    const focusSecs = isWeekendNow ? HEARTH_SECS : ALL_SECTIONS;
+    const crossTabTasks = [];
+    focusSecs.forEach(sec => {
+      (state[sec]||[]).forEach(t => {
+        if(!t.done) crossTabTasks.push({...t, sec});
+      });
     });
-    allTasks.sort((a,b) => b._score - a._score);
-    top = allTasks.slice(0, 5);
+    const ctx = getTimeContext();
+    crossTabTasks.forEach(t => {
+      const s = scoreTask(t);
+      // Blend base score with time-weighted urgency
+      const wScore = weightedScore(t, t.sec);
+      t._score = s.score + wScore;
+      t._reason = s.reason;
+
+      // Add time-context reason for cross-tab items
+      const isWork = WORK_SECS.includes(t.sec);
+      const isHearth = HEARTH_SECS.includes(t.sec);
+      if(isHearth && ctx.hearthWeight > 0.7 && !s.reason.includes('urgent')){
+        t._reason = t._reason || 'evening — hearth time';
+      }
+
+      // Critical urgency always surfaces regardless of tab
+      const u = assessUrgency(t);
+      if(u.level === 'critical' && u.reason){
+        t._score += 50;
+        t._reason = u.reason;
+      }
+    });
+    crossTabTasks.sort((a,b) => b._score - a._score);
+    top = crossTabTasks.slice(0, 5);
   }
 
   const _lockedInTaskId = lockedInTaskId;
@@ -107,7 +157,8 @@ export function updateFocusPanel(){
 
   // Add peek toggle if there are more than 1 task
   if(top.length > 1 && !_lockedInTaskId){
-    body.innerHTML += `<div class="focus-peek-btn" id="focus-peek-toggle">${_focusPeekMode ? '▲ show less' : '▼ see all ' + top.length + ' oaths'}</div>`;
+    const peekWord = isSworn ? 'oaths' : 'tasks';
+    body.innerHTML += `<div class="focus-peek-btn" id="focus-peek-toggle">${_focusPeekMode ? '▲ show less' : '▼ see all ' + top.length + ' ' + peekWord}</div>`;
   }
 
   // Attach begin/release click handlers
@@ -140,7 +191,7 @@ export function updateBurdenBars(){
 
 /* ═══ TAB BADGES ═══ */
 export function updateTabBadges(){
-  const workSecs = ['lab','bio','time'];
+  const workSecs = ['lab','bio'];
   const hearthSecs = ['hearth','scrolls','forge','bonds'];
   const workOpen = workSecs.reduce((s, sec) => s + (state[sec]||[]).filter(t=>!t.done).length, 0);
   const hearthOpen = hearthSecs.reduce((s, sec) => s + (state[sec]||[]).filter(t=>!t.done).length, 0);
@@ -219,6 +270,9 @@ export function enterLockIn(taskId){
     startPomodoroPhase('work');
   }
 
+  // Resume any enabled ambient sounds
+  resumeAmbient();
+
   // Body doubling is handled by canvas layers reading bodyDoublingEnabled directly
 
   // Get accumulated time on this task
@@ -244,11 +298,11 @@ export function enterLockIn(taskId){
       const rMins = Math.floor(remaining / 60000);
       const rSecs = Math.floor((remaining % 60000) / 1000);
       const pomoLabel = pomodoroCount > 0 ? ` • pomodoro #${pomodoroCount + 1}` : '';
-      timerEl.textContent = `🕯 ${rMins}:${String(rSecs).padStart(2,'0')} remaining • ${mins}m total${pomoLabel}`;
+      timerEl.innerHTML = `<i class="ti ti-candle" style="font-size:11px"></i> ${rMins}:${String(rSecs).padStart(2,'0')} remaining • ${mins}m total${pomoLabel}`;
     } else if(pomodoroEnabled && pomodoroPhase === 'break'){
-      timerEl.textContent = `☕ break time • ${mins}m total focused`;
+      timerEl.innerHTML = `<i class="ti ti-coffee" style="font-size:11px"></i> break time • ${mins}m total focused`;
     } else {
-      timerEl.textContent = `⏱ ${mins}m ${String(secs).padStart(2,'0')}s focused`;
+      timerEl.innerHTML = `<i class="ti ti-clock" style="font-size:11px"></i> ${mins}m ${String(secs).padStart(2,'0')}s focused`;
     }
 
     // Update pomodoro display
@@ -257,7 +311,7 @@ export function enterLockIn(taskId){
   setLockinTimerInterval(interval);
   const initMins = Math.floor(priorMs / 60000);
   const initSecs = Math.floor((priorMs % 60000) / 1000);
-  timerEl.textContent = `⏱ ${initMins}m ${String(initSecs).padStart(2,'0')}s focused`;
+  timerEl.innerHTML = `<i class="ti ti-clock" style="font-size:11px"></i> ${initMins}m ${String(initSecs).padStart(2,'0')}s focused`;
 
   // Populate expanded card
   populateLockinCard(taskId);
@@ -290,17 +344,20 @@ export function populateLockinCard(taskId){
     html += `<div class="lockin-card-note">${esc(task.notes)}</div>`;
   }
 
-  // Checklist
-  if(cl.length){
-    html += `<div class="lockin-card-checklist">`;
-    cl.forEach((c, ci) => {
-      html += `<div class="lockin-check-row${c.done ? ' done' : ''}" data-lockin-ci="${ci}">
-        <div class="lockin-check-box"><i class="ti ti-sparkles" style="font-size:8px"></i></div>
-        <span class="lockin-check-label">${esc(c.text)}</span>
-      </div>`;
-    });
-    html += `</div>`;
-  }
+  // Checklist (always show — can add even if empty)
+  html += `<div class="lockin-card-checklist">`;
+  cl.forEach((c, ci) => {
+    html += `<div class="lockin-check-row${c.done ? ' done' : ''}" data-lockin-ci="${ci}">
+      <div class="lockin-check-box"><i class="ti ti-sparkles" style="font-size:8px"></i></div>
+      <span class="lockin-check-label">${esc(c.text)}</span>
+      <span class="lockin-check-delete" data-lockin-del="${ci}" title="Banish"><i class="ti ti-x" style="font-size:10px"></i></span>
+    </div>`;
+  });
+  html += `<div class="lockin-add-sub">
+    <i class="ti ti-corner-down-right" style="font-size:11px;color:rgba(140,60,80,0.4)"></i>
+    <input class="lockin-add-sub-input" id="lockin-add-sub" placeholder="add sub-task…" />
+  </div>`;
+  html += `</div>`;
 
   // Pomodoro burn bar + preset picker
   const workMins = Math.round(pomodoroWorkMs / 60000);
@@ -323,6 +380,9 @@ export function populateLockinCard(taskId){
     </div>
   </div>`;
 
+  // Ambient sound toggles
+  html += ambientHTML();
+
   // Pomodoro break overlay
   html += `<div class="pomo-break-overlay" id="pomo-break-overlay">
     <div class="pomo-break-icon"><i class="ti ti-coffee" style="font-size:18px"></i></div>
@@ -332,6 +392,17 @@ export function populateLockinCard(taskId){
     <span class="pomo-skip-break" id="pomo-skip-break">skip break</span>
   </div>`;
 
+  // Payton voice capture — only for Payton tasks
+  const isPaytonTask = (task.text || '').toLowerCase().includes('payton');
+  if(isPaytonTask){
+    html += `<div class="payton-voice-capture">
+      <div class="payton-voice-label"><i class="ti ti-feather" style="font-size:10px;margin-right:4px"></i> What did you end up sending?</div>
+      <div class="payton-voice-hint">Paste your message here so the tome learns your voice</div>
+      <textarea class="payton-voice-input" id="payton-voice-input" placeholder="paste or type what you sent…"></textarea>
+      <div class="payton-voice-skip" id="payton-voice-skip">skip — I'll do it next time</div>
+    </div>`;
+  }
+
   // Seal (complete) button
   html += `<div class="lockin-card-seal">
     <span id="lockin-release-btn" style="font-family:Cinzel,serif;font-size:9px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:6px 16px;border-radius:2px;cursor:pointer;border:1px solid rgba(140,60,80,0.3);color:var(--text-muted);background:rgba(20,5,10,0.3);transition:all 0.2s">Release</span>
@@ -339,6 +410,9 @@ export function populateLockinCard(taskId){
   </div>`;
 
   card.innerHTML = html;
+
+  // Ambient sound handlers
+  attachAmbientHandlers(card);
 
   // Checklist click handlers
   card.querySelectorAll('.lockin-check-row').forEach(row => {
@@ -360,10 +434,43 @@ export function populateLockinCard(taskId){
     });
   });
 
+  // Checklist delete handlers
+  card.querySelectorAll('.lockin-check-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ci = parseInt(btn.dataset.lockinDel);
+      task.checklist.splice(ci, 1);
+      saveState();
+      populateLockinCard(taskId);
+      renderSection(taskSec);
+    });
+  });
+
+  // Add subtask handler
+  const addSubInput = document.getElementById('lockin-add-sub');
+  if(addSubInput){
+    addSubInput.addEventListener('keydown', (e) => {
+      if(e.key !== 'Enter') return;
+      const val = addSubInput.value.trim();
+      if(!val) return;
+      if(!task.checklist) task.checklist = [];
+      task.checklist.push({ text: val, done: false });
+      task.showChecklist = true;
+      saveState();
+      populateLockinCard(taskId);
+      renderSection(taskSec);
+    });
+  }
+
   // Seal button
   const sealBtn = document.getElementById('lockin-seal-btn');
   if(sealBtn){
     sealBtn.addEventListener('click', () => {
+      // Save Payton voice if capture is present
+      const pvInput = document.getElementById('payton-voice-input');
+      if(pvInput && pvInput.value.trim()){
+        savePaytonMessage(pvInput.value.trim());
+      }
       // Accumulate current session time before sealing
       if(lockinStartTime){
         const sessionMs = Date.now() - lockinStartTime;
@@ -389,6 +496,15 @@ export function populateLockinCard(taskId){
   const releaseBtn = document.getElementById('lockin-release-btn');
   if(releaseBtn){
     releaseBtn.addEventListener('click', () => exitLockIn());
+  }
+
+  // Payton voice skip
+  const pvSkip = document.getElementById('payton-voice-skip');
+  if(pvSkip){
+    pvSkip.addEventListener('click', () => {
+      const capture = pvSkip.closest('.payton-voice-capture');
+      if(capture) capture.style.display = 'none';
+    });
   }
 
   // Pomodoro toggle
@@ -465,6 +581,9 @@ export function exitLockIn(){
   setPomodoroPhaseStart(null);
   setPomodoroCount(0);
 
+  // Stop ambient sounds
+  stopAllAmbient();
+
   // Reset body doubling (canvas layers will stop boosting)
   setBodyDoublingEnabled(false);
 
@@ -497,14 +616,57 @@ export function initFocus(){
     updateBurdenBars();
     updateTabBadges();
 
-    // Auto-exit lock-in if the locked task gets completed
+    // Momentum mode: auto-advance to next oath after sealing
     if(lockedInTaskId){
       let found = false;
       ALL_SECTIONS.forEach(s => {
         const t = (state[s]||[]).find(t => t.id === lockedInTaskId);
         if(t && !t.done) found = true;
       });
-      if(!found) exitLockIn();
+      if(!found){
+        // Find the next unfinished sworn oath
+        const sworn = state.swornOaths || [];
+        let nextId = null;
+        for(const id of sworn){
+          if(id === lockedInTaskId) continue;
+          let stillOpen = false;
+          ALL_SECTIONS.forEach(s => {
+            const t = (state[s]||[]).find(t => t.id === id);
+            if(t && !t.done) stillOpen = true;
+          });
+          if(stillOpen){ nextId = id; break; }
+        }
+        if(nextId){
+          // Find next task's text for transition display
+          let nextText = 'next oath';
+          ALL_SECTIONS.forEach(s => {
+            const t = (state[s]||[]).find(t => t.id === nextId);
+            if(t) nextText = t.text;
+          });
+          // Show transition ritual overlay
+          const card = document.getElementById('lockin-card');
+          showTaskTransition('', nextText, card);
+          setTimeout(() => {
+            // Advance time tracking
+            if(lockinStartTime){
+              setLockinStartTime(Date.now());
+            }
+            setLockedInTaskId(nextId);
+            populateLockinCard(nextId);
+            updateFocusPanel();
+          }, 3000);
+        } else {
+          // No more oaths — exit
+          exitLockIn();
+        }
+      }
+    }
+  });
+
+  // Keyboard shortcut: Escape exits lock-in
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && lockedInTaskId){
+      exitLockIn();
     }
   });
 

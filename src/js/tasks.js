@@ -2,15 +2,88 @@
 import { esc, uid, formatDuration } from './utils.js';
 import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES } from './constants.js';
 import {
-  state, saveState, recordCompletion, unrecordCompletion, logTaskAddition, getAvgTime,
+  state, saveState, recordCompletion, unrecordCompletion, logTaskAddition as _logTaskAddition, getAvgTime,
   loadChecklistMemory, saveChecklistMemory, rememberChecklist, recallChecklist,
   lockedInTaskId, focusPeekMode
 } from './state.js';
-import { miniSparkBurst, spellSealBurst } from './canvas/index.js';
+import { miniSparkBurst, spellSealBurst, igniteBurst } from './canvas/index.js';
 import { emit } from './events.js';
+
+// Wrap logTaskAddition to also record for spike detection
+function logTaskAddition(text, sec){
+  _logTaskAddition(text, sec);
+  recordTaskCreation();
+}
 import { enterLockIn } from './focus.js';
 import { archiveTask } from './archive.js';
+import { parseQuickAdd } from './quickadd.js';
+import { recordSectionCompletion } from './enchantments.js';
 import { openBreakdownModal } from './ui.js';
+import { makeDraggable } from './dragorder.js';
+import { recordTaskCreation } from './spikedetect.js';
+import { urgencyBadgeHTML, assessUrgency } from './urgency.js';
+import { checkScaffold } from './scaffold.js';
+
+/* ═══ IN-PROGRESS TRACKING (multi-select) ═══ */
+const WORKING_KEY = 'tome_working_on';
+function getWorkingSet(){
+  try { return JSON.parse(localStorage.getItem(WORKING_KEY)) || {}; } catch(e){ return {}; }
+}
+function saveWorkingSet(set){
+  localStorage.setItem(WORKING_KEY, JSON.stringify(set));
+}
+function workingKey(taskId, checkIdx){
+  return checkIdx != null ? `${taskId}:${checkIdx}` : taskId;
+}
+export function toggleWorkingOn(taskId, checkIdx = null, btnRect = null){
+  const set = getWorkingSet();
+  const key = workingKey(taskId, checkIdx);
+  const wasWorking = !!set[key];
+  if(set[key]) delete set[key];
+  else {
+    set[key] = true;
+    // Record start time for elapsed tracking
+    if(!set._startTimes) set._startTimes = {};
+    set._startTimes[key] = Date.now();
+  }
+  saveWorkingSet(set);
+
+  // Task-start celebration: fire when moving TO working state
+  if(!wasWorking && set[key]){
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`.task-item[data-id="${taskId}"]`);
+      if(el) {
+        el.classList.add('just-started');
+        setTimeout(() => el.classList.remove('just-started'), 800);
+      }
+      // Spark from the button that was clicked, not the task card
+      if(btnRect){
+        igniteBurst(btnRect.left + btnRect.width/2, btnRect.top + btnRect.height/2);
+      } else if(el){
+        const rect = el.getBoundingClientRect();
+        igniteBurst(rect.left + rect.width/2, rect.top + rect.height/2);
+      }
+    });
+    // Track for spike detection
+    logTaskStart();
+  }
+}
+
+function logTaskStart(){
+  // Used by spike detection — just records timestamps of task starts
+  // (task creation spike detection reads the addlog, this is separate)
+}
+export function isWorkingOn(taskId, checkIdx = null){
+  return !!getWorkingSet()[workingKey(taskId, checkIdx)];
+}
+export function clearWorkingOn(taskId){
+  const set = getWorkingSet();
+  // Clear task + all its subtask entries
+  Object.keys(set).forEach(k => {
+    if(k === taskId || k.startsWith(taskId + ':')) delete set[k];
+  });
+  saveWorkingSet(set);
+}
 
 /* ═══ CLARITY SCORING ═══ */
 export function getClarity(task){
@@ -37,13 +110,20 @@ export function getClarity(task){
 export function clarityHTML(task){
   const c = getClarity(task);
   if(task.done) return '';
+  /* Delay low-clarity warnings for 24h after creation — let the user capture freely */
+  const created = task.createdAt ? new Date(task.createdAt).getTime() : 0;
+  const ageMs = Date.now() - created;
+  const isNew = ageMs < 86400000; /* 24 hours */
   const pips = [0,1,2].map(i => {
     const filled = c.score >= (i+1);
     const half = !filled && c.score >= (i+0.5);
-    const cls = c.level === 'vague' ? 'bad' : c.level === 'partial' ? 'warn' : 'filled';
-    return `<div class="clarity-pip${filled || half ? ' '+cls : ''}"></div>`;
+    /* New tasks get neutral pips (no warning color) even if clarity is low */
+    const cls = isNew ? (filled || half ? 'filled' : '')
+      : c.level === 'vague' ? 'bad' : c.level === 'partial' ? 'warn' : 'filled';
+    return `<div class="clarity-pip${filled || half ? ' '+cls : (cls ? ' '+cls : '')}"></div>`;
   }).join('');
-  return `<span class="clarity-bar" title="Clarity: ${c.level}">${pips}</span>`;
+  const label = isNew && c.level !== 'clear' ? 'New — clarity checked after 24h' : `Clarity: ${c.level}`;
+  return `<span class="clarity-bar" title="${label}">${pips}</span>`;
 }
 
 /* ═══ TIME ESTIMATES ═══ */
@@ -118,8 +198,10 @@ export function renderSection(sec){
 /* ═══ BUILD TASK ELEMENT ═══ */
 export function buildTaskEl(sec, task){
   const item = document.createElement('div');
-  item.className = 'task-item'+(task.done?' done':'');
+  const taskWorking = isWorkingOn(task.id);
+  item.className = 'task-item'+(task.done?' done':'')+(taskWorking?' working-on':'');
   item.dataset.id = task.id;
+  makeDraggable(item);
   const cl = task.checklist||[];
   const checkSummary = cl.length
     ? `<span style="font-size:11px;color:#6a4050;margin-left:8px;font-style:italic;letter-spacing:0.05em">[${cl.filter(c=>c.done).length}/${cl.length}]</span>` : '';
@@ -151,6 +233,15 @@ export function buildTaskEl(sec, task){
   const delegatedBadge = task.delegatedTo
     ? `<span class="delegated-badge" title="Delegated to ${esc(task.delegatedTo)}">${esc(task.delegatedTo)}</span>` : '';
 
+  // Urgency badge (Oracle's Eye)
+  const urgBadge = !task.done ? urgencyBadgeHTML(task) : '';
+
+  // Urgency glow on the card itself
+  const urgency = !task.done ? assessUrgency(task) : null;
+  if(urgency && (urgency.level === 'critical' || urgency.level === 'pressing')){
+    item.classList.add('urgency-glow-' + urgency.level);
+  }
+
   // Notes
   const noteContent = task.notes ? `<div class="task-note-text">${esc(task.notes)}</div>` : `<div class="task-note-text" style="color:#4a2a35;font-size:12px">no notes yet — click edit to add</div>`;
 
@@ -158,27 +249,30 @@ export function buildTaskEl(sec, task){
     <div class="task-row" data-action="toggle-done">
       <div class="rune-box"><i class="ti ti-sparkles" style="font-size:10px"></i></div>
       <div class="task-main">
-        <span class="task-text">${esc(task.text)}</span>${checkSummary}${ageBadge}${unboundBadge}${estBadge}${delegatedBadge}
+        <span class="task-text">${esc(task.text)}</span>${checkSummary}${urgBadge}${ageBadge}${unboundBadge}${estBadge}${delegatedBadge}
       </div>
     </div>
     <div class="task-actions">
-      <span class="action-btn" data-action="begin-focus" style="color:rgba(208,104,136,0.5);border-color:rgba(208,104,136,0.2)"><i class="ti ti-focus-2"></i>focus</span>
-      <span class="action-btn" data-action="edit-text"><i class="ti ti-pencil"></i>edit</span>
-      <span class="action-btn" data-action="toggle-notes"><i class="ti ti-note"></i>notes</span>
-      <span class="action-btn" data-action="toggle-list"><i class="ti ti-list-check"></i>checklist</span>
-      <span class="action-btn" data-action="delegate"><i class="ti ti-send"></i>delegate</span>
-      <span class="task-delete action-btn" data-action="delete"><i class="ti ti-skull"></i>banish</span>
+      ${!cl.length ? `<span class="action-btn${taskWorking ? ' working-on-active' : ''}" data-action="toggle-working" title="${taskWorking ? 'Pause' : 'Begin working'}"><i class="ti ti-${taskWorking ? 'player-pause' : 'player-play'}"></i></span>` : ''}
+      <span class="action-btn focus-btn" data-action="begin-focus" title="Focus mode"><i class="ti ti-focus-2"></i></span>
+      <span class="action-btn" data-action="edit-text" title="Edit"><i class="ti ti-pencil"></i></span>
+      <span class="action-btn" data-action="toggle-notes" title="Notes"><i class="ti ti-note"></i></span>
+      <span class="action-btn" data-action="toggle-list" title="Checklist"><i class="ti ti-list-check"></i></span>
+      <span class="action-btn" data-action="delegate" title="Delegate"><i class="ti ti-send"></i></span>
+      <span class="task-delete action-btn" data-action="delete" title="Banish"><i class="ti ti-skull"></i></span>
     </div>
     <div class="task-note${task.showNotes?' visible':''}" id="note-${task.id}">
       ${noteContent}
     </div>
     <div class="checklist" id="cl-${task.id}" style="${task.showChecklist?'':'display:none'}">
-      ${cl.map((c,ci)=>`
-        <div class="check-row${c.done?' done':''}" data-action="toggle-check" data-ci="${ci}">
+      ${cl.map((c,ci)=>{
+        const subWorking = isWorkingOn(task.id, ci);
+        return `<div class="check-row${c.done?' done':''}${subWorking?' working-on':''}" data-action="toggle-check" data-ci="${ci}">
           <div class="check-box"><i class="ti ti-sparkles" style="font-size:8px"></i></div>
           <span class="check-label">${esc(c.text)}</span>
+          <span class="check-working" data-action="toggle-sub-working" data-ci="${ci}" title="${subWorking?'Stop working':'Work on this'}"><i class="ti ti-${subWorking?'player-pause':'player-play'}" style="font-size:10px"></i></span>
           <span class="check-delete" data-action="del-check" data-ci="${ci}"><i class="ti ti-x" style="font-size:10px"></i></span>
-        </div>`).join('')}
+        </div>`}).join('')}
       <div class="add-subitem">
         <span class="add-subitem-plus"><i class="ti ti-corner-down-right" style="font-size:11px;color:rgba(140,60,80,0.4)"></i></span>
         <input placeholder="add sub-task…" data-action="add-check" />
@@ -204,11 +298,10 @@ export function buildTaskEl(sec, task){
     const c = getClarity(task);
     if(c.level === 'vague'){
       const bdBtn = document.createElement('span');
-      bdBtn.className = 'action-btn';
+      bdBtn.className = 'action-btn breakdown-btn';
       bdBtn.dataset.action = 'toggle-breakdown';
-      bdBtn.style.color = 'rgba(200,140,40,0.6)';
-      bdBtn.style.borderColor = 'rgba(200,140,40,0.2)';
-      bdBtn.innerHTML = '<i class="ti ti-puzzle"></i>break down';
+      bdBtn.title = 'Break down';
+      bdBtn.innerHTML = '<i class="ti ti-puzzle"></i>';
       actionsRow.insertBefore(bdBtn, actionsRow.querySelector('[data-action="delegate"]'));
     }
   }
@@ -237,6 +330,8 @@ export function buildTaskEl(sec, task){
       taskObj.done=!taskObj.done;
       // Fire celebration burst when completing (not uncompleting)
       if(!wasDone && taskObj.done){
+        // Clear all working-on state for this task and its subtasks
+        clearWorkingOn(task.id);
         const runeBox = item.querySelector('.rune-box');
         if(runeBox){
           const rect = runeBox.getBoundingClientRect();
@@ -246,12 +341,31 @@ export function buildTaskEl(sec, task){
       renderSection(sec); saveState();
       if(!wasDone && taskObj.done){
         recordCompletion();
+        recordSectionCompletion(sec);
         checkSectionCleared(sec);
       } else if(wasDone && !taskObj.done){
         unrecordCompletion();
       }
     }
-    else if(act==='begin-focus'){ enterLockIn(task.id); e.stopPropagation(); }
+    else if(act==='toggle-working'){
+      const btnRect = action.getBoundingClientRect();
+      toggleWorkingOn(task.id, null, btnRect);
+      renderSection(sec);
+      e.stopPropagation();
+    }
+    else if(act==='toggle-sub-working'){
+      const ci = parseInt(action.dataset.ci);
+      const subRect = action.getBoundingClientRect();
+      toggleWorkingOn(task.id, ci, subRect);
+      renderSection(sec);
+      e.stopPropagation();
+    }
+    else if(act==='begin-focus'){
+      const focusRect = action.getBoundingClientRect();
+      igniteBurst(focusRect.left + focusRect.width/2, focusRect.top + focusRect.height/2);
+      enterLockIn(task.id);
+      e.stopPropagation();
+    }
     else if(act==='toggle-list'){ taskObj.showChecklist=!taskObj.showChecklist; document.getElementById('cl-'+task.id).style.display=taskObj.showChecklist?'':'none'; saveState(); e.stopPropagation(); }
     else if(act==='toggle-notes'){
       e.stopPropagation();
@@ -304,6 +418,10 @@ export function buildTaskEl(sec, task){
       const ci = parseInt(action.dataset.ci);
       const wasDone = taskObj.checklist[ci].done;
       taskObj.checklist[ci].done = !taskObj.checklist[ci].done;
+      // Clear working-on for this subtask when checked off
+      if(!wasDone && taskObj.checklist[ci].done && isWorkingOn(task.id, ci)){
+        toggleWorkingOn(task.id, ci);
+      }
       // Mini sparkle burst when checking off (not unchecking)
       if(!wasDone && taskObj.checklist[ci].done){
         const checkBox = action.querySelector('.check-box');
@@ -424,9 +542,30 @@ export function initTasks(){
       if(e.key!=='Enter') return;
       const val=input.value.trim(); if(!val) return;
       const sec=input.dataset.section;
-      state[sec].push({id:uid(),text:val,done:false,priority:null,checklist:[],showChecklist:false,notes:'',createdAt:new Date().toISOString()});
-      logTaskAddition(val, sec);
-      input.value=''; renderSection(sec); saveState();
+      // Smart quick-add parsing
+      const parsed = parseQuickAdd(val);
+      const targetSec = parsed.suggestedSection || sec;
+      const task = {
+        id: uid(),
+        text: parsed.text,
+        done: false,
+        priority: parsed.priority,
+        checklist: [],
+        showChecklist: false,
+        notes: '',
+        createdAt: new Date().toISOString(),
+      };
+      if(parsed.estimate) task.estimate = parsed.estimate;
+      if(parsed.dueDate) task.dueDate = parsed.dueDate;
+      if(!state[targetSec]) state[targetSec] = [];
+      state[targetSec].push(task);
+      logTaskAddition(parsed.text, targetSec);
+      input.value='';
+      renderSection(targetSec);
+      if(targetSec !== sec) renderSection(sec); // refresh current view too
+      saveState();
+      // Check if this task should be scaffolded (auto-breakdown)
+      checkScaffold(task.id, targetSec);
     });
   });
 
@@ -495,5 +634,5 @@ export function initTasks(){
   _prevDoneStates = snapshotDoneStates();
 
   // Render all sections
-  ['lab','bio','time','hearth','scrolls','forge','bonds'].forEach(renderSection);
+  ['lab','bio','hearth','scrolls','forge','bonds'].forEach(renderSection);
 }

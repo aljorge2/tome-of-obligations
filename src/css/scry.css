@@ -256,32 +256,78 @@
 }
 .scry-btn-secondary:hover { color: var(--text-secondary); border-color: rgba(140,60,80,0.35); }
 
-/* ─── Brain Dump fields ─── */
-.dump-section { margin-bottom: 0.8rem; }
-.dump-label {
-  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+/* ─── Brain Dump — Smart Input ─── */
+.dump-smart-hints {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 10px;
 }
-.dump-prompt {
-  font-family: 'Crimson Text', serif; font-size: 12px;
-  font-style: italic; color: #6a4a55; margin-bottom: 4px;
+.dump-hint {
+  font-family: 'Crimson Text', serif; font-size: 10px;
+  color: rgba(212,168,85,0.35); font-style: italic;
+  background: rgba(212,168,85,0.04);
+  border: 1px solid rgba(212,168,85,0.08);
+  border-radius: 2px; padding: 2px 6px;
 }
-.dump-input {
+.dump-smart-input-wrap { margin-bottom: 12px; }
+.dump-smart-input {
   width: 100%; background: rgba(15,3,8,0.7);
   border: 1px solid rgba(140,60,80,0.25); border-radius: 2px;
-  padding: 6px 8px; outline: none;
-  font-family: 'Crimson Text', serif; font-size: 14px;
+  padding: 10px 12px; outline: none;
+  font-family: 'Crimson Text', serif; font-size: 15px;
   color: var(--text-secondary); font-style: italic;
 }
-.dump-input:focus { border-color: rgba(212,168,85,0.4); }
-.dump-input::placeholder { color: rgba(140,80,100,0.3); }
-.dump-added {
-  font-family: 'Crimson Text', serif; font-size: 11px;
-  color: #3da855; font-style: italic; margin-top: 2px;
-  opacity: 0; transition: opacity 0.3s;
+.dump-smart-input:focus { border-color: rgba(212,168,85,0.4); box-shadow: 0 0 8px rgba(212,168,85,0.08); }
+.dump-smart-input::placeholder { color: rgba(140,80,100,0.3); }
+.dump-smart-log {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 180px; overflow-y: auto;
 }
-.dump-added.show { opacity: 1; }
+.dump-smart-entry {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 8px; background: rgba(212,168,85,0.03);
+  border: 1px solid rgba(212,168,85,0.08);
+  border-radius: 2px; opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.dump-smart-entry.show { opacity: 1; }
+.dump-smart-check {
+  color: #3da855; font-size: 11px; min-width: 12px;
+}
+.dump-smart-text {
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  color: var(--text-secondary); flex: 1;
+}
+.dump-smart-sec {
+  font-family: 'Cinzel', serif; font-size: 8px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* ─── Payton Check-in (in Scry) ─── */
+.scry-payton-section { margin-top: 4px; }
+.scry-payton-question {
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  color: var(--text-secondary, #b8a080); font-style: italic;
+  margin-bottom: 8px;
+}
+.scry-payton-row { display: flex; gap: 8px; }
+.scry-payton-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 2px;
+  font-family: 'Cinzel', serif; font-size: 11px;
+  cursor: pointer; transition: all 0.2s;
+  border: 1px solid rgba(212,168,85,0.15);
+  background: rgba(15,6,12,0.6);
+  color: var(--text-secondary);
+}
+.scry-payton-btn:hover {
+  border-color: rgba(212,168,85,0.35);
+  background: rgba(212,168,85,0.06);
+}
+.scry-payton-btn i { font-size: 12px; }
+.scry-payton-yes i { color: #3da855; }
+.scry-payton-no i { color: #c85040; }
+.scry-payton-msg { margin-top: 8px; }
 
 /* ─── Struggles Journal ─── */
 .struggles-input {

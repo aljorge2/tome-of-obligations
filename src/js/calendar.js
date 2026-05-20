@@ -5,7 +5,7 @@ import { esc, formatDuration } from './utils.js';
 import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES, WORK_SECS, HEARTH_SECS } from './constants.js';
 import { state, saveState, getAvgTime, loadTemplates, loadTally } from './state.js';
 import { scoreTask } from './scry.js';
-import { openDayRite } from './dayrite.js';
+import { openDayRite, renderDayRite } from './dayrite.js';
 import { emit } from './events.js';
 
 /* ═══ CONFIG ═══ */
@@ -461,6 +461,7 @@ function attachHandlers(container){
       delete overrides[id];
       saveOverrides(overrides);
       renderCalendar();
+      renderDayRite();
     });
   });
 
@@ -473,6 +474,7 @@ function attachHandlers(container){
       delete overrides[id];
       saveOverrides(overrides);
       renderCalendar();
+      renderDayRite();
     });
   });
 
@@ -508,6 +510,7 @@ function attachHandlers(container){
           overrides[taskId] = mins;
           saveEstOverrides(overrides);
           renderCalendar();
+          renderDayRite();
         });
         picker.appendChild(opt);
       });
@@ -521,6 +524,7 @@ function attachHandlers(container){
         delete overrides[taskId];
         saveEstOverrides(overrides);
         renderCalendar();
+        renderDayRite();
       });
       picker.appendChild(autoOpt);
 
@@ -567,6 +571,7 @@ function attachHandlers(container){
         movingTaskId = null;
         movingTaskSec = null;
         renderCalendar();
+        renderDayRite();
       });
     });
   }

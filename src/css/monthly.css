@@ -1,0 +1,155 @@
+/* ─── Monthly Grimoire Review ─── */
+.monthly-overlay {
+  position: fixed; inset: 0;
+  z-index: 500;
+  background: rgba(5,1,4,0.9);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.4s ease;
+  pointer-events: none;
+  overflow-y: auto;
+}
+.monthly-overlay.visible {
+  opacity: 1; pointer-events: all;
+}
+.monthly-panel {
+  background: rgba(10,3,8,0.97);
+  border: 1px solid rgba(212,168,85,0.3);
+  border-radius: 4px;
+  padding: 32px;
+  max-width: 480px; width: 92%;
+  max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 0 60px rgba(212,168,85,0.1), 0 12px 40px rgba(0,0,0,0.7);
+  animation: grimRise 0.5s ease-out;
+}
+@keyframes grimRise {
+  from { transform: translateY(30px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+.monthly-header { text-align: center; margin-bottom: 24px; }
+.monthly-icon {
+  font-size: 36px; color: #d4a855;
+  filter: drop-shadow(0 0 10px rgba(212,168,85,0.4));
+  margin-bottom: 8px;
+}
+.monthly-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 18px; color: #d4a855;
+  letter-spacing: 0.08em;
+}
+.monthly-subtitle {
+  font-family: 'Crimson Text', serif;
+  font-size: 13px; font-style: italic;
+  color: var(--text-muted, #6a5a4a);
+  margin-top: 4px;
+}
+.monthly-stats {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 20px;
+}
+.monthly-stat {
+  background: rgba(15,6,12,0.6);
+  border: 1px solid rgba(212,168,85,0.12);
+  border-radius: 3px;
+  padding: 12px 10px;
+  text-align: center;
+}
+.monthly-stat-val {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 20px; font-weight: 700;
+  color: #d4a855;
+}
+.monthly-stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 7px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6a5a4a);
+  margin-top: 4px;
+}
+.monthly-highlight {
+  text-align: center;
+  font-family: 'Crimson Text', serif;
+  font-size: 14px;
+  color: var(--text-secondary, #b8a080);
+  margin-bottom: 20px; padding: 8px;
+  border: 1px solid rgba(212,168,85,0.1);
+  border-radius: 3px;
+  background: rgba(212,168,85,0.03);
+}
+.monthly-highlight-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6a5a4a);
+  margin-right: 6px;
+}
+.monthly-highlight-count {
+  font-size: 12px; color: var(--text-muted, #6a5a4a);
+}
+.monthly-chart { margin-bottom: 20px; }
+.monthly-chart-title {
+  font-family: 'Cinzel', serif;
+  font-size: 8px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6a5a4a);
+  margin-bottom: 8px;
+}
+.monthly-chart-bars {
+  display: flex; align-items: flex-end;
+  gap: 2px; height: 60px;
+}
+.monthly-bar {
+  flex: 1;
+  background: linear-gradient(to top, rgba(212,168,85,0.6), rgba(212,168,85,0.2));
+  border-radius: 1px 1px 0 0;
+  min-height: 2px;
+  transition: height 0.3s ease;
+}
+.monthly-bar:hover {
+  background: linear-gradient(to top, #d4a855, rgba(212,168,85,0.4));
+}
+.monthly-sections { margin-bottom: 20px; }
+.monthly-sec-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 0;
+  font-family: 'Crimson Text', serif; font-size: 13px;
+}
+.monthly-sec-dot { font-size: 8px; }
+.monthly-sec-name {
+  width: 90px;
+  color: var(--text-secondary, #b8a080);
+}
+.monthly-sec-bar {
+  flex: 1; height: 4px;
+  background: rgba(20,10,16,0.6);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.monthly-sec-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.monthly-sec-count {
+  font-family: 'Cinzel', serif;
+  font-size: 11px; color: var(--text-muted, #6a5a4a);
+  width: 24px; text-align: right;
+}
+.monthly-close {
+  text-align: center; margin-top: 12px;
+}
+.monthly-close-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 0.06em;
+  padding: 10px 24px;
+  border-radius: 3px; cursor: pointer;
+  background: rgba(212,168,85,0.08);
+  border: 1px solid rgba(212,168,85,0.3);
+  color: #d4a855;
+  transition: all 0.2s;
+}
+.monthly-close-btn:hover {
+  background: rgba(212,168,85,0.15);
+  box-shadow: 0 0 12px rgba(212,168,85,0.15);
+}

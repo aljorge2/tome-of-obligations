@@ -17,6 +17,10 @@ export const SEC_COLORS = {
   scrolls:{ h: 135, s: 55, l: 55 }, // green
   forge:  { h: 190, s: 55, l: 55 }, // teal
   bonds:  { h: 30,  s: 65, l: 55 }, // orange
+  complete:   { h: 45,  s: 80, l: 60 }, // bright gold
+  transition: { h: 25,  s: 70, l: 55 }, // warm amber
+  start:      { h: 140, s: 60, l: 55 }, // green — task initiation
+  release:    { h: 200, s: 45, l: 65 }, // cool blue — letting go
 };
 
 export function initCeleb(){
@@ -80,6 +84,46 @@ export function miniSparkBurst(cx, cy, sec){
     trailLen: 0,
     isCore: true,
     expandRate: 0.8,
+  });
+}
+
+// Ignite — a small upward flame flicker, not an explosion
+export function igniteBurst(cx, cy){
+  // Warm rising embers (10-14), drifting upward with slight wobble
+  const count = 10 + Math.floor(Math.random() * 5);
+  for(let i = 0; i < count; i++){
+    const spread = (Math.random() - 0.5) * 1.2; // slight horizontal drift
+    const rise = -(1.5 + Math.random() * 3);     // upward
+    const isCore = Math.random() < 0.4;
+    celebParticles.push({
+      x: cx + (Math.random() - 0.5) * 6,
+      y: cy,
+      dx: spread,
+      dy: rise,
+      r: isCore ? (1.5 + Math.random() * 2) : (0.5 + Math.random() * 1.2),
+      alpha: 0.8 + Math.random() * 0.2,
+      decay: 0.018 + Math.random() * 0.015,
+      hue: isCore ? (35 + Math.random() * 10) : (15 + Math.random() * 30), // orange-gold core, red-amber edges
+      sat: isCore ? 85 : 70,
+      light: isCore ? 65 : 50,
+      gravity: -0.01, // floats up, doesn't fall
+      trail: [],
+      trailLen: Math.floor(3 + Math.random() * 4),
+    });
+  }
+
+  // Tiny warm glow at ignition point
+  celebParticles.push({
+    x: cx, y: cy,
+    dx: 0, dy: -0.3,
+    r: 5,
+    alpha: 0.6,
+    decay: 0.04,
+    hue: 35, sat: 80, light: 70,
+    gravity: 0,
+    trail: [], trailLen: 0,
+    isCore: true,
+    expandRate: 0.3,
   });
 }
 

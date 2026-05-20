@@ -8,6 +8,30 @@ let selectedTime = null;
 let notifPermission = (typeof Notification !== 'undefined') ? Notification.permission || 'default' : 'default';
 const firedSet = new Set(); // track already-burst wards this session
 
+function showWardToast(text){
+  const toast = document.createElement('div');
+  toast.className = 'ward-toast';
+  toast.innerHTML = `<div class="ward-toast-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></div>
+    <div class="ward-toast-body">
+      <div class="ward-toast-title">Ward Triggered</div>
+      <div class="ward-toast-text">${esc(text)}</div>
+    </div>
+    <span class="ward-toast-close"><i class="ti ti-x" style="font-size:12px"></i></span>`;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  toast.querySelector('.ward-toast-close').addEventListener('click', () => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  });
+  // Auto-dismiss after 10 seconds
+  setTimeout(() => {
+    if(toast.parentNode){
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 10000);
+}
+
 function requestNotifPermission(){
   if('Notification' in window && notifPermission === 'default'){
     Notification.requestPermission().then(p => { notifPermission = p; });
@@ -134,9 +158,21 @@ export function addWard(){
 
   const dtInput = document.getElementById('ward-datetime');
   const customWrap = document.getElementById('custom-dt-wrap');
-  let datetime;
+  const meetingWrap = document.getElementById('ward-meeting-wrap');
   const activeBtn = document.querySelector('.quick-time-btn.active');
-  if(activeBtn && activeBtn.dataset.mins === 'custom'){
+
+  let datetime;
+  let endTime = null;
+
+  // Meeting mode: use date + start/end time fields
+  if(activeBtn && activeBtn.dataset.mins === 'meeting'){
+    const dateVal = document.getElementById('ward-meeting-date').value;
+    const startVal = document.getElementById('ward-meeting-start').value;
+    const endVal = document.getElementById('ward-meeting-end').value;
+    if(!dateVal || !startVal) return;
+    datetime = dateVal + 'T' + startVal;
+    endTime = endVal || null;
+  } else if(activeBtn && activeBtn.dataset.mins === 'custom'){
     if(!dtInput.value) return;
     datetime = dtInput.value;
   } else if(selectedTime){
@@ -147,19 +183,22 @@ export function addWard(){
   }
 
   const wardPageToggle = document.getElementById('ward-page-toggle');
-  state.wards.push({
+  const ward = {
     id: uid(),
     text: text,
     datetime: datetime,
     notified: false,
     page: wardPageTag,
-  });
+  };
+  if(endTime) ward.endTime = endTime;
+  state.wards.push(ward);
   textInput.value = '';
   selectedTime = null;
   wardPageTag = 'work';
   wardPageToggle.textContent = 'work';
   document.querySelectorAll('.quick-time-btn').forEach(b => b.classList.remove('active'));
   customWrap.classList.remove('visible');
+  meetingWrap.style.display = 'none';
   saveState(); renderWards();
 }
 
@@ -178,6 +217,8 @@ export function checkWards(){
           new Notification('⚠️ Ward Triggered', { body: ward.text, icon: '' });
         } catch(e){}
       }
+      // Always show in-app toast (works regardless of browser permission)
+      showWardToast(ward.text);
       // Fire a visual burst from the ward section
       if(!firedSet.has(ward.id)){
         firedSet.add(ward.id);
@@ -215,6 +256,7 @@ export function initWards(){
   const customWrap = document.getElementById('custom-dt-wrap');
   const dtInput = document.getElementById('ward-datetime');
 
+  const meetingWrap = document.getElementById('ward-meeting-wrap');
   document.querySelectorAll('.quick-time-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       // Toggle active state
@@ -222,7 +264,15 @@ export function initWards(){
       btn.classList.add('active');
 
       const val = btn.dataset.mins;
-      if(val === 'custom'){
+      if(val === 'meeting'){
+        customWrap.classList.remove('visible');
+        meetingWrap.style.display = 'block';
+        // Default to today's date
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('ward-meeting-date').value = today;
+        selectedTime = null;
+      } else if(val === 'custom'){
+        meetingWrap.style.display = 'none';
         customWrap.classList.add('visible');
         // Default custom to +1 hour
         const def = new Date(Date.now() + 3600000);
@@ -230,6 +280,7 @@ export function initWards(){
         selectedTime = null; // will use dtInput value
       } else {
         customWrap.classList.remove('visible');
+        meetingWrap.style.display = 'none';
         if(val === 'tomorrow'){
           const tom = new Date();
           tom.setDate(tom.getDate() + 1);

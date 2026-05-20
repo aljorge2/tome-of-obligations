@@ -2,13 +2,18 @@
 import { loadSelfCare, saveSelfCare } from './state.js';
 import { showStrugglesPatterns } from './struggles.js';
 
-const CARE_ITEMS = ['water','breakfast','lunch','dinner','sleep'];
-const CARE_LABELS = {
+export const CARE_ITEMS = ['water','breakfast','lunch','dinner','sleep','payton-am','payton-pm','med-am','med-pm','med-night'];
+export const CARE_LABELS = {
   water: { icon: 'ti-droplet', label: 'Drank enough water' },
   breakfast: { icon: 'ti-egg', label: 'Ate breakfast' },
   lunch: { icon: 'ti-salad', label: 'Ate lunch' },
   dinner: { icon: 'ti-soup', label: 'Ate dinner' },
   sleep: { icon: 'ti-moon', label: 'Got enough sleep' },
+  'med-am': { icon: 'ti-flask-2', label: 'Dawn elixir' },
+  'med-pm': { icon: 'ti-flask-2', label: 'Midday elixir' },
+  'payton-am': { icon: 'ti-heart', label: 'Checked in with Payton (morning)' },
+  'payton-pm': { icon: 'ti-heart', label: 'Checked in with Payton (evening)' },
+  'med-night': { icon: 'ti-flask-2', label: 'Dusk elixir' },
 };
 
 // Load once into memory, work from memory, sync to storage
@@ -63,9 +68,9 @@ export function populateScryCheckin(){
     const info = CARE_LABELS[item];
     const done = isCareChecked(item);
     html += `<div style="display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:3px;padding:8px 10px;transition:background 0.15s;margin-bottom:2px" id="scry-care-${item}">
-      <i class="ti ${info.icon}" style="font-size:16px;color:${done ? '#3da855' : '#4a2a35'}"></i>
+      <i class="ti ${info.icon}" style="font-size:16px;color:${done ? '#d4a855' : '#4a2a35'}"></i>
       <span style="font-family:Crimson Text,serif;font-size:14px;color:var(--text-secondary);flex:1">${info.label}</span>
-      <span style="font-family:Cinzel,serif;font-size:8px;letter-spacing:0.08em;padding:2px 7px;border-radius:2px;border:1px solid;${done ? 'color:#3da855;border-color:rgba(60,168,85,0.3);background:rgba(60,168,85,0.08)' : 'color:#c07060;border-color:rgba(200,80,60,0.3);background:rgba(200,80,60,0.08)'}">${done ? 'YES' : 'NO'}</span>
+      <span class="selfcare-scry-${done ? 'yes' : 'no'}" style="font-family:Cinzel,serif;font-size:8px;letter-spacing:0.08em;padding:2px 7px;border-radius:2px;border:1px solid">${done ? 'YES' : 'NO'}</span>
     </div>`;
   });
 

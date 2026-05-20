@@ -10,6 +10,8 @@ import { updateFocusPanel, updateBurdenBars, updateTabBadges, exitLockIn } from 
 import { renderCalendar } from './calendar.js';
 import { renderDayRite, setSwitchPage } from './dayrite.js';
 import { lockedInTaskId } from './state.js';
+import { showSettings as showGCalSettings } from './gcal.js';
+import { recordTaskCreation } from './spikedetect.js';
 
 /* ═══ TAB NAVIGATION ═══ */
 export function switchPage(page){
@@ -185,6 +187,7 @@ export function initUI(){
     const sec = detectSection(val);
     state[sec].push({id:uid(), text:val, done:false, priority:null, checklist:[], showChecklist:false, notes:'', createdAt:new Date().toISOString()});
     logTaskAddition(val, sec);
+    recordTaskCreation();
     saveState(); renderSection(sec);
     tcConfirm.textContent = `✓ captured → ${SECTION_NAMES[sec]||sec}`;
     tcConfirm.classList.add('show');
@@ -227,6 +230,11 @@ export function initUI(){
   document.getElementById('bd-done').addEventListener('click', closeBreakdownModal);
   bdOverlay.addEventListener('click', e => {
     if(e.target === bdOverlay) closeBreakdownModal();
+  });
+
+  // Google Calendar settings button
+  document.getElementById('btn-gcal')?.addEventListener('click', () => {
+    showGCalSettings();
   });
 
   // Radar

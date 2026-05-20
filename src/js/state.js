@@ -127,6 +127,45 @@ export function initState() {
   setIdCounter(loaded.nextId);
 }
 
+/* ═══ DAY-CHANGE DETECTION ═══ */
+const DAY_CHECK_KEY = 'tome_last_day';
+
+/* Get today's date string in America/Los_Angeles (PDT/PST) */
+function todayPDT(){
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+}
+
+/**
+ * Check if the day has changed since last load.
+ * If so, clear sworn oaths (new day = new planning session)
+ * and reset self-care strip (fresh daily tracking).
+ * Returns true if a new day was detected.
+ */
+export function checkDayChange(){
+  const today = todayPDT();
+  let lastDay;
+  try { lastDay = safeStorage.getItem(DAY_CHECK_KEY); } catch(e){}
+  if(lastDay === today) return false;
+  // New day detected — reset daily state
+  try { safeStorage.setItem(DAY_CHECK_KEY, today); } catch(e){}
+  // Clear sworn oaths so user must re-scry
+  state.swornOaths = [];
+  state.swornOrder = [];
+  saveState();
+  // Reset self-care for today (the selfcare module reads per-day keys,
+  // so we just need to ensure the strip re-renders from fresh day data)
+  return true;
+}
+
+/* Run day-change check on a timer so it triggers if the app is open at midnight */
+let _dayCheckInterval = null;
+export function startDayChangeTimer(onDayChange){
+  if(_dayCheckInterval) clearInterval(_dayCheckInterval);
+  _dayCheckInterval = setInterval(() => {
+    if(checkDayChange() && onDayChange) onDayChange();
+  }, 60000); /* check every minute */
+}
+
 /* ═══ TALLY SYSTEM ═══ */
 export function loadTally() {
   try {
@@ -180,6 +219,19 @@ export function updateTallyDisplay() {
   const weekEl = document.getElementById('tally-week');
   if (todayEl) todayEl.textContent = today;
   if (weekEl) weekEl.textContent = week;
+
+  // Update progress ring
+  const sworn = (state.swornOaths || []).length;
+  const total = sworn || Math.max(today, 3); // Use sworn count, or fallback
+  const pct = total > 0 ? Math.min(today / total, 1) : 0;
+  const ringFill = document.getElementById('progress-ring-fill');
+  const ringText = document.getElementById('progress-ring-text');
+  if(ringFill){
+    ringFill.style.strokeDashoffset = 100 - (pct * 100);
+  }
+  if(ringText){
+    ringText.textContent = sworn ? `${today}/${sworn}` : today;
+  }
 }
 
 /* ═══ TASK ADDITION LOG ═══ */

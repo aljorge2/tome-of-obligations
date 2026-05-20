@@ -1,14 +1,14 @@
-export const WORK_SECS = ['lab', 'bio', 'time'];
+export const WORK_SECS = ['lab', 'bio'];
 export const HEARTH_SECS = ['hearth', 'scrolls', 'forge', 'bonds'];
-export const ALL_SECTIONS = ['lab', 'bio', 'time', 'hearth', 'scrolls', 'forge', 'bonds'];
+export const ALL_SECTIONS = ['lab', 'bio', 'hearth', 'scrolls', 'forge', 'bonds'];
 
 export const SECTION_NAMES = {
-  lab: 'Lab Manager', bio: 'Bioinfo', time: 'If Time',
+  lab: 'Lab Manager', bio: 'Bioinfo',
   hearth: 'Hearthkeeping', scrolls: 'Scrolls & Seals', forge: 'The Forge', bonds: 'Bonds & Oaths'
 };
 
 export const SECTION_COLORS = {
-  lab: '#9b50e0', bio: '#3da855', time: '#2899bb',
+  lab: '#9b50e0', bio: '#3da855',
   hearth: '#9b50e0', scrolls: '#3da855', forge: '#2899bb', bonds: '#d08838'
 };
 
@@ -25,8 +25,7 @@ export const SEC_KEYWORDS = {
   forge: ['hobby','read','book','workout','gym','run','walk','hike','trip','vacation','goal','learn','practice','class','cook','bake','garden'],
   bonds: ['call','text','email','reply','message','gift','birthday','date','payton','friend','family','mom','dad','sister','brother','visit'],
   lab: ['lab','experiment','order','inventory','protocol','meeting','pi','grant'],
-  bio: ['pipeline','script','cluster','tscc','run','analysis','data','code','debug','snakemake','scenic'],
-  time: ['read paper','review','organize desk','clean inbox'],
+  bio: ['pipeline','script','cluster','tscc','run','analysis','data','code','debug','snakemake','scenic','bioinfo','bioinformatics','genomics','sequencing','fastq','bam','vcf','alignment','rnaseq','scrnaseq','genome','conda','jupyter','python'],
 };
 
 export const RADAR_PROMPTS = [

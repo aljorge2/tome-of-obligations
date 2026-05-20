@@ -50,14 +50,47 @@
         <i class="ti ti-moon selfcare-icon off" id="care-sleep-icon"></i>
         <span class="selfcare-label">sleep</span>
       </div>
+      <div class="selfcare-divider"></div>
+      <div class="selfcare-item" data-care="payton-am" title="Morning Payton check-in">
+        <i class="ti ti-heart selfcare-icon off" id="care-payton-am-icon"></i>
+        <span class="selfcare-label">P·am</span>
+      </div>
+      <div class="selfcare-item" data-care="payton-pm" title="Evening Payton check-in">
+        <i class="ti ti-heart selfcare-icon off" id="care-payton-pm-icon"></i>
+        <span class="selfcare-label">P·pm</span>
+      </div>
+      <div class="selfcare-divider"></div>
+      <div class="selfcare-item" data-care="med-am">
+        <i class="ti ti-flask-2 selfcare-icon off" id="care-med-am-icon"></i>
+        <span class="selfcare-label">dawn</span>
+      </div>
+      <div class="selfcare-item" data-care="med-pm">
+        <i class="ti ti-flask-2 selfcare-icon off" id="care-med-pm-icon"></i>
+        <span class="selfcare-label">midday</span>
+      </div>
+      <div class="selfcare-item" data-care="med-night">
+        <i class="ti ti-flask-2 selfcare-icon off" id="care-med-night-icon"></i>
+        <span class="selfcare-label">dusk</span>
+      </div>
     </div>
 
     <div class="tally-bar">
+      <div class="progress-ring-wrap" id="progress-ring" title="Oaths sealed today">
+        <svg viewBox="0 0 36 36" class="progress-ring-svg">
+          <circle class="progress-ring-bg" cx="18" cy="18" r="15.9" />
+          <circle class="progress-ring-fill" id="progress-ring-fill" cx="18" cy="18" r="15.9" />
+        </svg>
+        <span class="progress-ring-text" id="progress-ring-text">0</span>
+      </div>
       <div class="tally-item"><span class="tally-num" id="tally-today">0</span><span class="tally-label">sealed today</span></div>
       <div class="tally-item"><span class="tally-num" id="tally-week">0</span><span class="tally-label">this week</span></div>
     </div>
-    <div class="scry-trigger" id="scry-trigger">
-      <i class="ti ti-eye" style="font-size:13px"></i> Scry
+    <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:4px">
+      <span class="search-trigger-btn" id="search-trigger" title="Search the tome (Cmd+K)"><i class="ti ti-search"></i></span>
+      <div class="scry-trigger" id="scry-trigger">
+        <i class="ti ti-eye" style="font-size:13px"></i> Scry
+      </div>
+      <span class="birdseye-toggle" id="birdseye-toggle" title="Bird's eye view"><i class="ti ti-layout-list" style="font-size:10px"></i> Overview</span>
     </div>
     <div class="scry-nudge" id="scry-nudge">
       <span class="scry-nudge-icon"><i class="ti ti-eye"></i></span>
@@ -105,10 +138,19 @@
           <span class="quick-time-btn" data-mins="180">3h</span>
           <span class="quick-time-btn" data-mins="tomorrow">9am</span>
           <span class="quick-time-btn" data-mins="custom">custom</span>
+          <span class="quick-time-btn" data-mins="meeting" id="ward-meeting-toggle"><i class="ti ti-calendar-event" style="font-size:9px"></i> meeting</span>
           <span class="quick-time-btn" id="ward-page-toggle" data-page="work">work</span>
         </div>
         <div class="custom-dt-wrap" id="custom-dt-wrap">
           <input type="datetime-local" id="ward-datetime" />
+        </div>
+        <div class="ward-meeting-wrap" id="ward-meeting-wrap" style="display:none">
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:4px 0">
+            <input type="date" id="ward-meeting-date" class="rite-input" style="font-size:11px;width:auto">
+            <input type="time" id="ward-meeting-start" class="rite-input rite-time-input" placeholder="start">
+            <span style="font-family:Crimson Text,serif;font-size:11px;color:var(--text-muted);font-style:italic">to</span>
+            <input type="time" id="ward-meeting-end" class="rite-input rite-time-input" placeholder="end">
+          </div>
         </div>
         <button class="reminder-add-btn" id="ward-add-btn">Bind</button>
       </div>
@@ -148,21 +190,6 @@
         </div>
       </div>
 
-      <div class="section section-time" data-sec="time">
-        <div class="section-header">
-          <i class="ti ti-chevron-down collapse-arrow" aria-hidden="true"></i>
-          <i class="ti ti-hourglass section-icon" aria-hidden="true"></i>
-          <span class="section-title">If Time</span>
-          <span class="section-count" id="time-count"></span>
-          <span class="clear-done-btn" id="time-clear" data-section="time">purge sealed</span>
-        </div>
-        <div class="burden-bar" id="time-burden"></div>
-        <div class="tasks" id="time-tasks"></div>
-        <div class="add-row">
-          <div class="add-plus"><i class="ti ti-plus" style="font-size:11px"></i></div>
-          <input class="add-input" placeholder="inscribe a new task…" data-section="time" />
-        </div>
-      </div>
     </div>
 
     <!-- HEARTH PAGE -->
@@ -294,10 +321,13 @@
 
     <div class="tome-utils">
       <span class="tome-util-btn" id="btn-review"><i class="ti ti-report" style="font-size:10px"></i> Weekly Review</span>
+      <span class="tome-util-btn" id="stats-trigger"><i class="ti ti-chart-dots" style="font-size:10px"></i> Tome Stats</span>
       <span class="tome-util-btn" id="btn-export"><i class="ti ti-download" style="font-size:10px"></i> Transcribe</span>
       <span class="tome-util-btn" id="btn-import"><i class="ti ti-upload" style="font-size:10px"></i> Restore</span>
+      <span class="tome-util-btn" id="btn-gcal"><i class="ti ti-calendar-event" style="font-size:10px"></i> G-Cal</span>
       <input type="file" id="import-file" accept=".json" style="display:none" />
     </div>
+    <div class="stats-body" id="stats-body"></div>
   </div>
 </div>
 
@@ -346,41 +376,23 @@
       </div>
     </div>
 
-    <!-- Step 1.5: Brain Dump -->
+    <!-- Step 1.5: Brain Dump (Smart Input) -->
     <div class="scry-step" id="scry-step-dump">
       <div class="scry-section">
         <div class="scry-section-title">Brain Dump</div>
-        <p style="font-family:'Crimson Text',serif;font-size:13px;color:#8a6070;font-style:italic;margin-bottom:1rem;">
-          Empty your mind. For each area, write down anything that comes to you. Hit Enter to add, then keep going. Skip what's empty.
+        <p style="font-family:'Crimson Text',serif;font-size:13px;color:#8a6070;font-style:italic;margin-bottom:0.6rem;">
+          Empty your mind. Type anything — the tome will sort it for you. Hit Enter to add, keep going.
         </p>
-
-        <div class="dump-section">
-          <div class="dump-label" style="color:#9b50e0"><i class="ti ti-home" style="font-size:11px"></i> Hearthkeeping</div>
-          <div class="dump-prompt">Does anything need cleaning, fixing, restocking?</div>
-          <input class="dump-input" data-dump-sec="hearth" placeholder="type and hit enter…" />
-          <div class="dump-added" data-dump-msg="hearth"></div>
+        <div class="dump-smart-hints">
+          <span class="dump-hint">@lab @bio @hearth @forge @bonds</span>
+          <span class="dump-hint">~30m ~1h</span>
+          <span class="dump-hint">!! !!!</span>
+          <span class="dump-hint">by friday</span>
         </div>
-
-        <div class="dump-section">
-          <div class="dump-label" style="color:#3da855"><i class="ti ti-scroll" style="font-size:11px"></i> Scrolls &amp; Seals</div>
-          <div class="dump-prompt">Any appointments, forms, bills, or paperwork?</div>
-          <input class="dump-input" data-dump-sec="scrolls" placeholder="type and hit enter…" />
-          <div class="dump-added" data-dump-msg="scrolls"></div>
+        <div class="dump-smart-input-wrap">
+          <input class="dump-smart-input" id="dump-smart-input" placeholder="type a task and hit enter…" autocomplete="off" />
         </div>
-
-        <div class="dump-section">
-          <div class="dump-label" style="color:#2899bb"><i class="ti ti-hammer" style="font-size:11px"></i> The Forge</div>
-          <div class="dump-prompt">Anything you've been wanting to do for yourself? Hobbies, goals, trips?</div>
-          <input class="dump-input" data-dump-sec="forge" placeholder="type and hit enter…" />
-          <div class="dump-added" data-dump-msg="forge"></div>
-        </div>
-
-        <div class="dump-section">
-          <div class="dump-label" style="color:#d08838"><i class="ti ti-heart-handshake" style="font-size:11px"></i> Bonds &amp; Oaths</div>
-          <div class="dump-prompt">Does anyone need something from you? Payton, family, friends?</div>
-          <input class="dump-input" data-dump-sec="bonds" placeholder="type and hit enter…" />
-          <div class="dump-added" data-dump-msg="bonds"></div>
-        </div>
+        <div class="dump-smart-log" id="dump-smart-log"></div>
       </div>
       <div class="scry-nav">
         <button class="scry-btn scry-btn-secondary" id="scry-back-dump"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>
@@ -396,6 +408,21 @@
           How did you take care of yourself today? Just tap what you did.
         </p>
         <div id="scry-selfcare-checkin"></div>
+      </div>
+      <div class="scry-section">
+        <div class="scry-section-title"><i class="ti ti-heart-handshake" style="font-size:12px;margin-right:4px"></i> Bonds</div>
+        <div class="scry-payton-section" id="scry-payton-section">
+          <div class="scry-payton-question">Have you checked in with Payton today?</div>
+          <div class="scry-payton-row" id="scry-payton-row">
+            <button class="scry-payton-btn scry-payton-yes" id="scry-payton-yes">
+              <i class="ti ti-check"></i> Yes
+            </button>
+            <button class="scry-payton-btn scry-payton-no" id="scry-payton-no">
+              <i class="ti ti-x"></i> Not yet
+            </button>
+          </div>
+          <div class="scry-payton-msg" id="scry-payton-msg" style="display:none"></div>
+        </div>
       </div>
       <div class="scry-section">
         <div class="scry-section-title">What Drained You?</div>
@@ -419,20 +446,30 @@
           How does your mana flow today? The tome will shape your oaths accordingly.
         </p>
         <div class="energy-choices" id="energy-choices">
-          <div class="energy-choice" data-energy="low">
-            <div class="energy-icon"><i class="ti ti-flame" style="font-size:22px"></i></div>
-            <div class="energy-label">Flickering</div>
-            <div class="energy-desc">Low energy — keep it light, quick wins only</div>
+          <div class="energy-choice" data-energy="1">
+            <div class="energy-icon"><i class="ti ti-moon-stars" style="font-size:22px"></i></div>
+            <div class="energy-label">Spent</div>
+            <div class="energy-desc">Running on fumes — only the gentlest tasks</div>
           </div>
-          <div class="energy-choice" data-energy="medium">
+          <div class="energy-choice" data-energy="2">
+            <div class="energy-icon"><i class="ti ti-flame" style="font-size:22px"></i></div>
+            <div class="energy-label">Waning</div>
+            <div class="energy-desc">Low energy — keep it light, quick wins</div>
+          </div>
+          <div class="energy-choice" data-energy="3">
             <div class="energy-icon"><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i></div>
             <div class="energy-label">Steady</div>
             <div class="energy-desc">Normal flow — a balanced mix of tasks</div>
           </div>
-          <div class="energy-choice" data-energy="high">
+          <div class="energy-choice" data-energy="4">
             <div class="energy-icon"><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i></div>
+            <div class="energy-label">Kindled</div>
+            <div class="energy-desc">Good energy — ready for deeper work</div>
+          </div>
+          <div class="energy-choice" data-energy="5">
+            <div class="energy-icon"><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i></div>
             <div class="energy-label">Blazing</div>
-            <div class="energy-desc">High energy — tackle the deep, complex work</div>
+            <div class="energy-desc">High energy — tackle the complex, heavy tasks</div>
           </div>
         </div>
         <div class="energy-history" id="energy-history"></div>
@@ -474,7 +511,7 @@
     <div class="tc-confirm" id="tc-confirm"></div>
   </div>
   <div class="tc-toggle" id="tc-toggle">
-    <i class="ti ti-bolt"></i>
+    <i class="ti ti-feather"></i>
   </div>
 </div>
 

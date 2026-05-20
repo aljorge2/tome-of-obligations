@@ -68,6 +68,39 @@
   text-transform: uppercase;
 }
 
+/* Progress Ring */
+.progress-ring-wrap {
+  position: relative;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+}
+.progress-ring-svg {
+  width: 34px; height: 34px;
+  transform: rotate(-90deg);
+}
+.progress-ring-bg {
+  fill: none;
+  stroke: rgba(212,168,85,0.1);
+  stroke-width: 3;
+}
+.progress-ring-fill {
+  fill: none;
+  stroke: #d4a855;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 0.8s ease-out;
+  filter: drop-shadow(0 0 3px rgba(212,168,85,0.4));
+}
+.progress-ring-text {
+  position: absolute;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 10px; font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 0 6px rgba(212,168,85,0.2);
+}
+
 .divider {
   border: none;
   height: 1px;

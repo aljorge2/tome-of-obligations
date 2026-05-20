@@ -1,0 +1,239 @@
+/* ─── Energy Check-in Overlay ─── */
+.energy-overlay {
+  position: fixed; inset: 0;
+  z-index: 500;
+  background: rgba(5,1,4,0.85);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.energy-overlay.visible {
+  opacity: 1; pointer-events: all;
+}
+.energy-panel {
+  background: rgba(12,4,10,0.95);
+  border: 1px solid rgba(212,168,85,0.3);
+  border-radius: 4px;
+  padding: 28px 32px;
+  max-width: 380px; width: 90%;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(212,168,85,0.08), 0 8px 32px rgba(0,0,0,0.6);
+  animation: energyRise 0.4s ease-out;
+}
+@keyframes energyRise {
+  from { transform: translateY(20px) scale(0.96); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+.energy-sigil {
+  font-size: 32px; color: #d4a855;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 8px rgba(212,168,85,0.4));
+}
+.energy-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px; letter-spacing: 0.12em;
+  color: #d4a855; margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.energy-prompt {
+  font-family: 'Crimson Text', serif;
+  font-size: 16px; font-style: italic;
+  color: var(--text-secondary, #b8a080);
+  margin-bottom: 20px; line-height: 1.4;
+}
+.energy-scale {
+  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.energy-btn {
+  background: rgba(20,8,16,0.8);
+  border: 1px solid rgba(212,168,85,0.2);
+  border-radius: 3px;
+  padding: 10px 8px;
+  width: 110px; cursor: pointer;
+  transition: all 0.2s;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+}
+.energy-btn:hover {
+  border-color: #d4a855;
+  background: rgba(212,168,85,0.08);
+  box-shadow: 0 0 12px rgba(212,168,85,0.15);
+  transform: translateY(-2px);
+}
+.energy-btn-num {
+  font-family: 'Cinzel', serif;
+  font-size: 16px; font-weight: 700;
+  color: #d4a855;
+}
+.energy-btn-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px; letter-spacing: 0.06em;
+  color: #d4a855;
+  text-transform: uppercase; opacity: 0.8;
+}
+.energy-btn-desc {
+  font-family: 'Crimson Text', serif;
+  font-size: 10px; font-style: italic;
+  color: var(--text-muted, #6a5a4a);
+  line-height: 1.3; text-align: center;
+}
+.energy-transition-note {
+  font-family: 'Crimson Text', serif;
+  font-size: 12px; font-style: italic;
+  color: rgba(212,168,85,0.6);
+  margin-top: 8px;
+}
+.energy-dismiss {
+  margin-top: 12px;
+}
+.energy-dismiss-btn {
+  font-family: 'Crimson Text', serif;
+  font-size: 11px; color: var(--text-muted, #6a5a4a);
+  cursor: pointer; opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.energy-dismiss-btn:hover { opacity: 1; }
+.energy-rebuild-row {
+  display: flex; gap: 10px; justify-content: center;
+  margin-top: 16px;
+}
+.energy-rebuild-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 0.06em;
+  padding: 8px 16px;
+  border-radius: 3px; cursor: pointer;
+  background: rgba(212,168,85,0.1);
+  border: 1px solid rgba(212,168,85,0.4);
+  color: #d4a855;
+  transition: all 0.2s;
+}
+.energy-rebuild-btn:hover {
+  background: rgba(212,168,85,0.2);
+  box-shadow: 0 0 10px rgba(212,168,85,0.2);
+}
+.energy-rebuild-btn.energy-rebuild-no {
+  background: transparent;
+  border-color: rgba(100,80,60,0.3);
+  color: var(--text-muted, #6a5a4a);
+}
+.energy-rebuild-btn.energy-rebuild-no:hover {
+  border-color: rgba(100,80,60,0.5);
+  color: var(--text-secondary, #b8a080);
+  box-shadow: none;
+}
+
+/* ─── Bonds & Care Page ─── */
+.energy-payton-section {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(212,168,85,0.1);
+}
+.energy-payton-question {
+  font-family: 'Crimson Text', serif;
+  font-size: 15px; font-style: italic;
+  color: var(--text-secondary, #b8a080);
+  margin-bottom: 12px;
+}
+.energy-payton-row {
+  display: flex; gap: 10px; justify-content: center;
+}
+.energy-payton-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 0.05em;
+  padding: 8px 18px;
+  border-radius: 3px; cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.energy-payton-yes {
+  background: rgba(208,136,56,0.1);
+  border: 1px solid rgba(208,136,56,0.4);
+  color: #d08838;
+}
+.energy-payton-yes:hover {
+  background: rgba(208,136,56,0.2);
+  box-shadow: 0 0 10px rgba(208,136,56,0.2);
+}
+.energy-payton-no {
+  background: transparent;
+  border: 1px solid rgba(100,80,60,0.3);
+  color: var(--text-muted, #6a5a4a);
+}
+.energy-payton-no:hover {
+  border-color: rgba(100,80,60,0.5);
+  color: var(--text-secondary, #b8a080);
+}
+.energy-payton-msg {
+  margin-top: 12px;
+  text-align: center;
+}
+.energy-payton-suggest-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6a5a4a);
+  margin-bottom: 6px;
+}
+.energy-payton-suggest-text {
+  font-family: 'Crimson Text', serif;
+  font-size: 14px; font-style: italic;
+  color: #d08838;
+  padding: 10px 14px;
+  background: rgba(208,136,56,0.05);
+  border: 1px solid rgba(208,136,56,0.2);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1.4;
+}
+.energy-payton-suggest-text:hover {
+  background: rgba(208,136,56,0.1);
+  border-color: rgba(208,136,56,0.35);
+}
+.energy-payton-suggest-hint {
+  font-family: 'Crimson Text', serif;
+  font-size: 10px;
+  color: var(--text-muted, #6a5a4a);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Self-care in energy overlay */
+.energy-care-section { margin-top: 4px; }
+.energy-care-title {
+  font-family: 'Cinzel', serif;
+  font-size: 8px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6a5a4a);
+  margin-bottom: 8px;
+}
+.energy-care-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.energy-care-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.energy-care-item:hover {
+  background: rgba(212,168,85,0.06);
+}
+.energy-care-item.done {
+  background: rgba(212,168,85,0.04);
+}
+.energy-care-label {
+  font-family: 'Crimson Text', serif;
+  font-size: 12px;
+  color: var(--text-secondary, #b8a080);
+  flex: 1;
+}
+.energy-care-status {
+  font-size: 11px;
+  color: #d4a855;
+  min-width: 12px;
+}

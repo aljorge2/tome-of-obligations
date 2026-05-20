@@ -1,23 +1,26 @@
 // src/js/scry.js — The Scry overlay system
 import { esc, uid, formatDuration } from './utils.js';
-import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES, WORK_SECS, HEARTH_SECS, URGENCY_KEYWORDS } from './constants.js';
+import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES, WORK_SECS, HEARTH_SECS, URGENCY_KEYWORDS, SEC_KEYWORDS } from './constants.js';
 import {
   state, saveState, loadTally, loadAddLog, getAvgTime,
   loadSwapMemory, saveSwapMemory, recordSwap, getSwapAdjustment,
   loadTemplates, saveTemplates, logTaskAddition,
-  getCurrentEnergy, setTodayEnergy, loadEnergy
 } from './state.js';
+import { getCurrentEnergy, getEnergyHistory as getEnergyHistoryData, getPaytonSuggestions, savePaytonMessage } from './energy.js';
 import { renderSection } from './tasks.js';
-import { updateFocusPanel } from './focus.js';
+import { updateFocusPanel, enterLockIn } from './focus.js';
 import { renderTemplates } from './templates.js';
 import { populateScryCheckin } from './selfcare.js';
 import { saveStrugglesEntry } from './struggles.js';
+import { parseQuickAdd } from './quickadd.js';
+import { spellSealBurst } from './canvas/index.js';
 
 const scryOverlay = document.getElementById('scry-overlay');
 let scryWorkPicks = new Set();
 let scryHearthPicks = new Set();
 let currentWorkRecs = [];
 let currentHearthRecs = [];
+let _paytonPending = false; // set true when user says "not yet" to Payton check-in
 
 export function scoreTask(t){
   let score = 5;
@@ -53,16 +56,16 @@ export function scoreTask(t){
     }
   }
 
-  // ── Energy-aware scoring ──
+  // ── Energy-aware scoring (numeric 1-5 scale) ──
   const energy = getCurrentEnergy();
-  if(energy){
+  if(energy && energy > 0){
     const est = t.estimate || 30;
-    if(energy === 'low'){
-      // Prefer short/easy tasks
+    if(energy <= 2){
+      // Low energy — prefer short/easy tasks
       if(est <= 15) { score += 10; if(!reasons.length) reasons.push('quick win for low energy'); }
       else if(est >= 60) { score -= 15; }
-    } else if(energy === 'high'){
-      // Prefer deep/complex tasks
+    } else if(energy >= 4){
+      // High energy — prefer deep/complex tasks
       if(est >= 60) { score += 10; if(!reasons.length) reasons.push('deep work — ride the energy'); }
       if(cl.length >= 3 && cl.filter(c=>c.done).length === 0) { score += 8; }
     }
@@ -255,6 +258,40 @@ export function commitOaths(){
   scryOverlay.classList.remove('open');
   updateFocusPanel();
   checkScryNudge(); // hide nudge after scrying
+
+  // If user said "not yet" to Payton, create a bonds task and enter focus
+  if(_paytonPending){
+    _paytonPending = false;
+    createPaytonTask();
+  }
+}
+
+function createPaytonTask(){
+  // Generate 3 message suggestions — uses user's own voice when available
+  const shuffled = getPaytonSuggestions(3);
+  const notes = "Pick one to send:\n\n" + shuffled.map((m, i) => `${i+1}. "${m}"`).join('\n\n');
+
+  const taskId = uid();
+  const task = {
+    id: taskId,
+    text: 'Send message to Payton',
+    done: false,
+    priority: 2,
+    checklist: [],
+    showChecklist: false,
+    notes: notes,
+    createdAt: new Date().toISOString(),
+    estimate: 5,
+  };
+
+  state.bonds.push(task);
+  saveState();
+  renderSection('bonds');
+
+  // Enter focus mode on this task after a brief delay
+  setTimeout(() => {
+    enterLockIn(taskId);
+  }, 500);
 }
 
 /* ═══ SCRY NUDGE SYSTEM ═══ */
@@ -338,31 +375,42 @@ export function detectAvoidance(){
 /* ═══ ENERGY ORACLE ═══ */
 function populateEnergyOracle(){
   const choices = document.getElementById('energy-choices');
-  const current = getCurrentEnergy();
+  const current = getCurrentEnergy(); // numeric 1-5 or null
 
   // Highlight current selection
   choices.querySelectorAll('.energy-choice').forEach(el => {
-    el.classList.toggle('selected', el.dataset.energy === current);
+    const level = parseInt(el.dataset.energy);
+    el.classList.toggle('selected', level === current);
     el.onclick = () => {
-      setTodayEnergy(el.dataset.energy);
+      // Record into energy.js system — store as the current time-of-day check
+      const hour = new Date().getHours();
+      const label = hour < 12 ? 'morning' : hour < 17 ? 'midday' : 'dusk';
+      try {
+        const raw = localStorage.getItem('tome_energy');
+        const data = raw ? JSON.parse(raw) : { days: {} };
+        const key = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+        if(!data.days[key]) data.days[key] = {};
+        data.days[key][label] = level;
+        localStorage.setItem('tome_energy', JSON.stringify(data));
+      } catch(e){}
       choices.querySelectorAll('.energy-choice').forEach(c => c.classList.remove('selected'));
       el.classList.add('selected');
     };
   });
 
-  // Show energy history (last 7 days)
+  // Show energy history (last 7 days) using energy.js data
   const historyEl = document.getElementById('energy-history');
-  const energyData = loadEnergy();
+  const history = getEnergyHistoryData(7);
   const now = new Date();
   let histHTML = '<div style="margin-top:12px;padding-top:8px;border-top:1px solid rgba(212,168,85,0.1)">';
   histHTML += '<div style="font-family:Cinzel,serif;font-size:8px;letter-spacing:0.1em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:6px">Recent energy</div>';
   histHTML += '<div style="display:flex;gap:6px;align-items:flex-end">';
   for(let i = 6; i >= 0; i--){
-    const key = new Date(now.getTime() - i * 86400000).toISOString().slice(0,10);
+    const entry = history[i] || { avg: null };
     const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(now.getTime() - i * 86400000).getDay()];
-    const level = energyData.days[key] ? energyData.days[key].level : null;
-    const h = level === 'high' ? 24 : level === 'medium' ? 16 : level === 'low' ? 8 : 3;
-    const color = level === 'high' ? '#e08040' : level === 'medium' ? '#d4a855' : level === 'low' ? '#8a6050' : 'rgba(80,40,50,0.3)';
+    const avg = entry.avg;
+    const h = avg ? Math.round(avg * 5.5 + 2) : 3; // scale 1-5 to ~7-30px
+    const color = avg >= 4 ? '#e08040' : avg >= 3 ? '#d4a855' : avg >= 1 ? '#8a6050' : 'rgba(80,40,50,0.3)';
     const isToday = i === 0;
     histHTML += `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">
       <div style="width:100%;height:${h}px;background:${color};border-radius:2px;transition:height 0.3s${isToday ? ';box-shadow:0 0 6px '+color : ''}"></div>
@@ -507,9 +555,16 @@ export var openScry = function(){
   document.getElementById('scry-step-checkin').classList.remove('active');
   document.getElementById('scry-step-energy').classList.remove('active');
   document.getElementById('scry-step-2').classList.remove('active');
-  // Clear dump inputs
-  document.querySelectorAll('.dump-input').forEach(i => i.value = '');
-  document.querySelectorAll('.dump-added').forEach(m => m.classList.remove('show'));
+  // Clear smart dump input
+  const dumpSmartInput = document.getElementById('dump-smart-input');
+  if(dumpSmartInput) dumpSmartInput.value = '';
+  const dumpSmartLog = document.getElementById('dump-smart-log');
+  if(dumpSmartLog) dumpSmartLog.innerHTML = '';
+  // Reset Payton check-in
+  const paytonRow = document.getElementById('scry-payton-row');
+  if(paytonRow) paytonRow.style.display = '';
+  const paytonMsg = document.getElementById('scry-payton-msg');
+  if(paytonMsg){ paytonMsg.style.display = 'none'; paytonMsg.innerHTML = ''; }
   scryOverlay.classList.add('open');
 };
 
@@ -534,6 +589,42 @@ export function initScry(){
     document.getElementById('scry-step-checkin').classList.remove('active');
     document.getElementById('scry-step-dump').classList.add('active');
   });
+  // Payton check-in handlers (in Body & Spirit step)
+  const PAYTON_MSGS = [
+    "Hey love, just thinking about you. Hope your day is going well 💛",
+    "Hi babe — sending you a little love in the middle of the day. You've got this.",
+    "Just wanted to say I love you and I hope today is being kind to you.",
+    "Thinking of you right now. Hope you're having a good one 🖤",
+    "Hey — I love you. That's all. Hope your day is treating you right.",
+  ];
+  document.getElementById('scry-payton-yes').addEventListener('click', () => {
+    const msgEl = document.getElementById('scry-payton-msg');
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = '<span style="color:#d4a855;font-style:italic">The bond strengthens.</span>';
+    document.getElementById('scry-payton-row').style.display = 'none';
+    const btn = document.getElementById('scry-payton-yes');
+    const rect = btn.getBoundingClientRect();
+    spellSealBurst(rect.left + rect.width/2, rect.top + rect.height/2, 'bonds');
+  });
+  document.getElementById('scry-payton-no').addEventListener('click', () => {
+    _paytonPending = true;
+    const msgEl = document.getElementById('scry-payton-msg');
+    const suggestions = getPaytonSuggestions(1);
+    const msg = suggestions[0];
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = `
+      <div style="font-family:'Crimson Text',serif;font-size:10px;color:#6a5a4a;margin-bottom:4px;font-style:italic">A message for Payton:</div>
+      <div class="scry-payton-suggest-text" style="font-family:'Crimson Text',serif;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:6px 8px;background:rgba(212,168,85,0.04);border:1px solid rgba(212,168,85,0.1);border-radius:2px">"${msg}"</div>
+      <div class="scry-payton-suggest-hint" style="font-family:'Crimson Text',serif;font-size:9px;color:#5a4a3a;font-style:italic;margin-top:3px">tap to copy</div>
+    `;
+    document.getElementById('scry-payton-row').style.display = 'none';
+    msgEl.querySelector('.scry-payton-suggest-text').addEventListener('click', () => {
+      navigator.clipboard?.writeText(msg).then(() => {
+        msgEl.querySelector('.scry-payton-suggest-hint').textContent = 'copied ✓';
+      });
+    });
+  });
+
   document.getElementById('scry-next-checkin').addEventListener('click', () => {
     saveStrugglesEntry();
     document.getElementById('scry-step-checkin').classList.remove('active');
@@ -556,26 +647,63 @@ export function initScry(){
   document.getElementById('scry-commit-2').addEventListener('click', commitOaths);
   document.getElementById('scry-reshuffle').addEventListener('click', generateRecommendations);
 
-  // Brain dump inputs — enter to add task to section
-  document.querySelectorAll('.dump-input').forEach(input => {
-    input.addEventListener('keydown', e => {
+  // Smart brain dump input — single input with auto-routing
+  const dumpInput = document.getElementById('dump-smart-input');
+  const dumpLog = document.getElementById('dump-smart-log');
+  if(dumpInput){
+    dumpInput.addEventListener('keydown', e => {
       if(e.key !== 'Enter') return;
-      const val = input.value.trim();
-      if(!val) return;
-      const sec = input.dataset.dumpSec;
-      if(!state[sec]) return;
-      state[sec].push({id:uid(), text:val, done:false, priority:null, checklist:[], showChecklist:false, notes:'', createdAt:new Date().toISOString()});
-      logTaskAddition(val, sec);
-      saveState(); renderSection(sec);
-      const msg = document.querySelector(`[data-dump-msg="${sec}"]`);
-      if(msg){
-        msg.textContent = `✓ "${val}" added`;
-        msg.classList.add('show');
-        setTimeout(() => msg.classList.remove('show'), 2000);
+      const raw = dumpInput.value.trim();
+      if(!raw) return;
+
+      // Parse with quick-add for metadata
+      const parsed = parseQuickAdd(raw);
+
+      // Determine section: explicit @tag > keyword detection > active page default
+      let sec = parsed.suggestedSection;
+      if(!sec){
+        // Keyword detection (same as thought catcher)
+        const lower = parsed.text.toLowerCase();
+        let bestSec = null, bestScore = 0;
+        for(const [s, keywords] of Object.entries(SEC_KEYWORDS)){
+          for(const kw of keywords){
+            if(lower.includes(kw) && kw.length > bestScore){
+              bestSec = s; bestScore = kw.length;
+            }
+          }
+        }
+        sec = bestSec || (state.activePage === 'hearth' ? 'hearth' : 'lab');
       }
-      input.value = '';
+
+      // Create the task
+      const task = {
+        id: uid(), text: parsed.text, done: false,
+        priority: parsed.priority, checklist: [], showChecklist: false,
+        notes: '', createdAt: new Date().toISOString(),
+      };
+      if(parsed.estimate) task.estimate = parsed.estimate;
+      if(parsed.dueDate) task.dueDate = parsed.dueDate;
+
+      state[sec].push(task);
+      logTaskAddition(parsed.text, sec);
+      saveState();
+      renderSection(sec);
+
+      // Add to visible log
+      const secName = SECTION_NAMES[sec] || sec;
+      const secColor = SECTION_COLORS[sec] || '#888';
+      const entry = document.createElement('div');
+      entry.className = 'dump-smart-entry';
+      entry.innerHTML = `<span class="dump-smart-check">✓</span>
+        <span class="dump-smart-text">${esc(parsed.text)}</span>
+        <span class="dump-smart-sec" style="color:${secColor}">${secName.split(' ')[0]}</span>`;
+      dumpLog.prepend(entry);
+      requestAnimationFrame(() => entry.classList.add('show'));
+
+      dumpInput.value = '';
+      dumpInput.focus();
     });
-  });
+  }
 
   // Nudge click opens scry
   document.getElementById('scry-nudge').addEventListener('click', (e) => {

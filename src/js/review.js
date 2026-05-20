@@ -1,7 +1,7 @@
 // src/js/review.js — Weekly review
 import { esc, formatDuration } from './utils.js';
 import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES } from './constants.js';
-import { state, loadTally, loadArchive } from './state.js';
+import { state, loadTally, loadArchive, loadStruggles } from './state.js';
 import { scoreTask, detectAvoidance } from './scry.js';
 import { renderCalendar } from './calendar.js';
 
@@ -89,6 +89,74 @@ export function openWeeklyReview(){
     html += `<div class="scry-section"><div class="scry-section-title">Oath Fulfillment</div>
       <div class="scry-stat"><span>Oaths sealed</span><span class="scry-stat-num">${oathsDone} / ${oathCount}</span></div>
     </div>`;
+  }
+
+  // ── Daily Completion Trend (past 7 days) ──
+  html += '<div class="scry-section"><div class="scry-section-title">Daily Sealing Trend</div>';
+  const dayLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const dayCounts = [];
+  for(let i = 6; i >= 0; i--){
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const dayStart = d.toISOString();
+    const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).toISOString();
+    const count = tally.completions.filter(c => c >= dayStart && c < dayEnd).length;
+    dayCounts.push(count);
+  }
+  const maxCount = Math.max(...dayCounts, 1);
+  html += '<div class="insight-trend">';
+  dayCounts.forEach((c, i) => {
+    const pct = Math.round((c / maxCount) * 100);
+    const dayIdx = (now.getDay() + 6 - (6 - i)) % 7; // map to Mon-Sun
+    const label = dayLabels[dayIdx < 0 ? dayIdx + 7 : dayIdx] || '';
+    html += `<div class="insight-bar-col">
+      <div class="insight-bar" style="height:${Math.max(pct, 4)}%"></div>
+      <div class="insight-bar-val">${c}</div>
+      <div class="insight-bar-label">${label}</div>
+    </div>`;
+  });
+  html += '</div></div>';
+
+  // ── Productive Hours ──
+  if(weekArchive.length){
+    html += '<div class="scry-section"><div class="scry-section-title">Most Productive Hours</div>';
+    const hourBuckets = {};
+    weekArchive.forEach(a => {
+      if(a.sealedAt){
+        const h = new Date(a.sealedAt).getHours();
+        hourBuckets[h] = (hourBuckets[h] || 0) + 1;
+      }
+    });
+    const topHours = Object.entries(hourBuckets).sort((a,b) => b[1] - a[1]).slice(0, 3);
+    if(topHours.length){
+      html += topHours.map(([h, c]) => {
+        const hr = parseInt(h);
+        const label = hr === 0 ? '12am' : hr < 12 ? `${hr}am` : hr === 12 ? '12pm' : `${hr-12}pm`;
+        return `<div class="scry-stat"><span>${label}</span><span class="scry-stat-num">${c} seals</span></div>`;
+      }).join('');
+    }
+    html += '</div>';
+  }
+
+  // ── Struggle Patterns ──
+  const struggles = loadStruggles();
+  const recentStruggles = struggles.filter(s => s.date && s.date >= weekStartISO);
+  if(recentStruggles.length){
+    // Find common words
+    const wordCounts = {};
+    recentStruggles.forEach(s => {
+      (s.text || '').toLowerCase().split(/\W+/).filter(w => w.length > 3).forEach(w => {
+        wordCounts[w] = (wordCounts[w] || 0) + 1;
+      });
+    });
+    const topWords = Object.entries(wordCounts).sort((a,b) => b[1] - a[1]).slice(0, 5).filter(([,c]) => c > 1);
+    if(topWords.length){
+      html += '<div class="scry-section"><div class="scry-section-title">Recurring Struggle Patterns</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+      topWords.forEach(([word, count]) => {
+        html += `<span style="font-family:Crimson Text,serif;font-size:11px;padding:2px 8px;border-radius:2px;background:rgba(200,80,60,0.1);border:1px solid rgba(200,80,60,0.2);color:#c07060">${word} (${count}×)</span>`;
+      });
+      html += '</div></div>';
+    }
   }
 
   // Weekly plan section — render the actual calendar

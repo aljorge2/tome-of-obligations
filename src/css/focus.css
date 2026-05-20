@@ -1,3 +1,35 @@
+/* ─── Begin Your Day CTA ─── */
+.begin-day-cta {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; padding: 1.2rem 1rem 0.8rem;
+  cursor: pointer; transition: all 0.3s;
+  border-radius: 3px; margin: 4px;
+}
+.begin-day-cta:hover {
+  background: rgba(212,168,85,0.06);
+}
+.begin-day-icon {
+  font-size: 28px; color: #d4a855;
+  filter: drop-shadow(0 0 8px rgba(212,168,85,0.3));
+  animation: iconPulse 3s ease-in-out infinite alternate;
+}
+.begin-day-title {
+  font-family: 'Cinzel Decorative', serif; font-weight: 700;
+  font-size: 16px; color: #d4a855;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 12px rgba(212,168,85,0.15);
+}
+.begin-day-sub {
+  font-family: 'Crimson Text', serif; font-size: 12px;
+  color: #8a6070; font-style: italic;
+}
+@keyframes beginDayPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(212,168,85,0); }
+  50%  { box-shadow: 0 0 20px 2px rgba(212,168,85,0.08); }
+  100% { box-shadow: 0 0 0 0 rgba(212,168,85,0); }
+}
+.begin-day-cta { animation: beginDayPulse 4s ease-in-out infinite; }
+
 /* ─── Today's Focus Panel ─── */
 .focus-panel {
   background: rgba(10,3,8,0.75);
@@ -284,6 +316,38 @@
 }
 
 /* Pomodoro break overlay */
+/* ── Ambient Sound Toggles ── */
+.ambient-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 8px; margin-top: 4px;
+}
+.ambient-label {
+  font-family: 'Cinzel', serif; font-size: 7px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 3px;
+  white-space: nowrap;
+}
+.ambient-btn {
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(140,60,80,0.15);
+  color: var(--text-muted); background: rgba(20,5,10,0.3);
+  transition: all 0.25s;
+}
+.ambient-btn:hover {
+  color: var(--text-secondary);
+  border-color: rgba(212,168,85,0.3);
+  background: rgba(212,168,85,0.06);
+}
+.ambient-btn.active {
+  color: #d4a855;
+  border-color: rgba(212,168,85,0.4);
+  background: rgba(212,168,85,0.1);
+  box-shadow: 0 0 8px rgba(212,168,85,0.12);
+}
+
 .pomo-break-overlay {
   display: none; text-align: center;
   padding: 1.2rem 1rem;
@@ -320,3 +384,66 @@
 .pomo-skip-break:hover { color: var(--text-secondary); border-color: rgba(140,80,90,0.3); }
 
 /* Body doubling is now purely ambient canvas effects — no text UI needed */
+
+/* ─── Focus Mode Checklist Editing ─── */
+.lockin-check-delete {
+  opacity: 0; cursor: pointer; padding: 0 4px;
+  margin-left: auto; transition: all 0.2s;
+  color: rgba(212,168,85,0.7);
+}
+.lockin-check-row:hover .lockin-check-delete { opacity: 0.7; }
+.lockin-check-delete:hover { opacity: 1 !important; color: #ff3355; }
+.lockin-add-sub {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 6px; padding: 4px 0;
+}
+.lockin-add-sub-input {
+  flex: 1; background: transparent; border: none;
+  border-bottom: 1px solid rgba(140,60,80,0.15);
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  color: var(--text-primary); padding: 4px 2px;
+  outline: none; transition: border-color 0.2s;
+}
+.lockin-add-sub-input::placeholder { color: rgba(180,140,160,0.3); }
+.lockin-add-sub-input:focus { border-color: rgba(212,168,85,0.3); }
+
+/* ─── Payton Voice Capture ─── */
+.payton-voice-capture {
+  margin-top: 14px; padding: 12px 14px;
+  background: rgba(92,192,221,0.04);
+  border: 1px solid rgba(92,192,221,0.12);
+  border-radius: 4px;
+}
+.payton-voice-label {
+  font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: #5cc0dd; margin-bottom: 4px;
+  display: flex; align-items: center;
+}
+.payton-voice-hint {
+  font-family: 'Crimson Text', serif; font-size: 12px;
+  color: var(--text-muted); font-style: italic;
+  margin-bottom: 8px;
+}
+.payton-voice-input {
+  width: 100%; min-height: 60px; padding: 8px 10px;
+  background: rgba(20,12,18,0.5);
+  border: 1px solid rgba(92,192,221,0.15);
+  border-radius: 3px; resize: vertical;
+  font-family: 'Crimson Text', serif; font-size: 14px;
+  color: var(--text-primary); line-height: 1.4;
+}
+.payton-voice-input::placeholder { color: rgba(180,140,160,0.35); }
+.payton-voice-input:focus {
+  outline: none;
+  border-color: rgba(92,192,221,0.35);
+  box-shadow: 0 0 8px rgba(92,192,221,0.08);
+}
+.payton-voice-skip {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-muted); cursor: pointer;
+  margin-top: 6px; text-align: right;
+  transition: color 0.2s;
+}
+.payton-voice-skip:hover { color: var(--text-secondary); }

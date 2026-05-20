@@ -73,9 +73,9 @@
 .check-row.done .check-box { color: var(--accent-light); border-color: var(--accent); box-shadow: 0 0 4px var(--accent); }
 .check-row.done .check-label { text-decoration: line-through; color: #4a2a35; text-decoration-color: rgba(140,40,55,0.35); }
 .check-label { font-size: 13.5px; color: #d0b0b8; font-style: italic; word-break: break-word; transition: color 0.2s; }
-.check-delete { margin-left: auto; font-size: 11px; color: #3a1520; cursor: pointer; padding: 0 4px; opacity: 0; transition: opacity 0.2s, color 0.2s; }
-.check-row:hover .check-delete { opacity: 1; }
-.check-delete:hover { color: var(--crimson-bright); }
+.check-delete { margin-left: auto; font-size: 11px; color: rgba(212,168,85,0.7); cursor: pointer; padding: 0 4px; opacity: 0; transition: opacity 0.2s, color 0.2s; }
+.check-row:hover .check-delete { opacity: 0.7; }
+.check-delete:hover { opacity: 1 !important; color: #ff3355; }
 
 .add-subitem { display: flex; align-items: center; gap: 6px; padding: 4px 8px; }
 .add-subitem input {
@@ -86,16 +86,27 @@
 .add-subitem input::placeholder { color: rgba(140,80,100,0.35); }
 .add-subitem-plus { font-size: 11px; color: rgba(140,70,85,0.45); flex-shrink: 0; }
 
-.task-actions { display: flex; gap: 6px; align-items: center; padding: 2px 10px 8px 36px; }
+.task-actions { display: flex; gap: 4px; align-items: center; padding: 2px 10px 8px 36px; }
 .action-btn {
-  font-size: 11px; color: rgba(160,80,100,0.45); cursor: pointer;
-  padding: 3px 8px; border: 1px solid rgba(140,50,70,0.18); border-radius: 2px;
-  font-family: 'Crimson Text', serif; font-style: italic;
-  transition: all 0.2s; display: flex; align-items: center; gap: 5px;
-  background: rgba(20,5,10,0.3);
+  color: rgba(160,80,100,0.4); cursor: pointer;
+  padding: 5px 7px; border: 1px solid rgba(140,50,70,0.15); border-radius: 2px;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+  background: rgba(20,5,10,0.3); line-height: 1;
+  position: relative;
 }
 .action-btn:hover { color: rgba(220,120,140,0.9); border-color: rgba(180,70,90,0.4); background: rgba(140,40,55,0.1); }
-.action-btn i { font-size: 12px; }
+.action-btn i { font-size: 13px; }
+.action-btn::after {
+  content: attr(title);
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  padding: 3px 8px; margin-bottom: 4px;
+  font-family: 'Crimson Text', serif; font-size: 11px; font-style: italic;
+  color: #d4a855; background: rgba(10,3,8,0.92);
+  border: 1px solid rgba(212,168,85,0.25); border-radius: 2px;
+  white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.15s;
+}
+.action-btn:hover::after { opacity: 1; }
 .task-delete { margin-left: auto; }
 .task-delete:hover { color: #e04060 !important; border-color: rgba(200,50,70,0.5) !important; }
 
@@ -238,11 +249,12 @@
 
 /* ─── Promote Sub-task Button ─── */
 .check-promote {
-  font-size: 10px; color: #3a2510; cursor: pointer;
+  font-size: 10px; cursor: pointer;
   padding: 0 3px; opacity: 0; transition: opacity 0.2s, color 0.2s;
+  color: rgba(212,168,85,0.7);
 }
-.check-row:hover .check-promote { opacity: 1; }
-.check-promote:hover { color: #5cc0dd; }
+.check-row:hover .check-promote { opacity: 0.7; }
+.check-promote:hover { opacity: 1 !important; color: #5cc0dd; }
 
 /* Ward page tag on tasks */
 .ward-tag {
@@ -290,3 +302,35 @@
 /* ─── Delegate Prompt ─── */
 .delegate-input:focus { border-color: #5cc0dd; box-shadow: 0 0 6px rgba(40,153,187,0.2); }
 .delegate-confirm:hover { background: rgba(40,153,187,0.15); border-color: #5cc0dd; }
+
+/* ─── Working-On Indicator ─── */
+.task-item.working-on {
+  border-left: 2px solid var(--accent, rgba(212,168,85,0.25));
+  background: rgba(212,168,85,0.02);
+}
+.task-item.done.working-on {
+  border-left: none; background: none;
+}
+.working-on-active {
+  color: rgba(212,168,85,0.7) !important;
+  border-color: rgba(212,168,85,0.3) !important;
+}
+[data-action="toggle-working"] { transition: all 0.2s; }
+[data-action="toggle-working"]:hover {
+  color: #d4a855 !important; border-color: rgba(212,168,85,0.4) !important;
+}
+
+/* Subtask working-on */
+.check-row.working-on {
+  border-left: 2px solid var(--accent, rgba(212,168,85,0.2));
+  padding-left: 6px;
+  background: rgba(212,168,85,0.02);
+}
+.check-working {
+  cursor: pointer; opacity: 0; transition: all 0.2s;
+  margin-left: auto; padding: 0 4px;
+  color: rgba(212,168,85,0.7);
+}
+.check-row:hover .check-working { opacity: 0.7; }
+.check-working:hover { opacity: 1 !important; color: #d4a855; }
+.check-row.working-on .check-working { opacity: 0.75; }

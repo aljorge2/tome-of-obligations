@@ -115,10 +115,46 @@
 .rite-input:focus { border-color: rgba(212,168,85,0.35); }
 .rite-input::placeholder { color: var(--text-muted); }
 .rite-input[type="text"] { flex: 1; min-width: 100px; }
-.rite-time-input { width: 70px; font-size: 11px; color-scheme: dark; }
+.rite-time-input {
+  width: 74px; font-size: 11px;
+  font-family: 'Cinzel', serif; font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--rite-accent-light, #e890aa);
+  background: rgba(15,5,10,0.7);
+  border: 1px solid rgba(208,104,136,0.2);
+  border-radius: 2px; padding: 4px 6px;
+  outline: none; cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none; appearance: none;
+  color-scheme: dark;
+}
+.rite-time-input:focus {
+  border-color: rgba(208,104,136,0.45);
+  box-shadow: 0 0 8px rgba(208,104,136,0.1);
+}
+.rite-time-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.6) sepia(0.5) hue-rotate(300deg);
+  cursor: pointer;
+  opacity: 0.5;
+}
+.rite-time-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
+}
 .rite-meeting-to {
   font-family: 'Crimson Text', serif; font-size: 11px;
   color: var(--text-muted); font-style: italic;
+}
+.rite-quick-dur {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(212,168,85,0.2);
+  color: var(--text-muted); background: rgba(212,168,85,0.04);
+  transition: all 0.2s; user-select: none;
+}
+.rite-quick-dur:hover, .rite-quick-dur.active {
+  color: #d4a855; background: rgba(212,168,85,0.12);
+  border-color: rgba(212,168,85,0.35);
 }
 .rite-meeting-add-btn {
   width: 24px; height: 24px;
@@ -233,6 +269,30 @@
   background: rgba(60,168,85,0.18);
   box-shadow: 0 0 8px rgba(60,168,85,0.15);
 }
+.rite-remove-btn {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(140,60,80,0.15);
+  color: var(--text-muted); background: transparent;
+  transition: all 0.2s;
+}
+.rite-remove-btn:hover {
+  color: #c07060; border-color: rgba(200,80,60,0.3);
+  background: rgba(200,80,60,0.1);
+}
+.rite-add-btn {
+  width: 18px; height: 18px; min-width: 18px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(60,168,85,0.2);
+  color: #3da855; background: rgba(60,168,85,0.06);
+  transition: all 0.2s;
+}
+.rite-add-btn:hover {
+  background: rgba(60,168,85,0.18);
+  box-shadow: 0 0 6px rgba(60,168,85,0.12);
+}
 
 /* Empty state */
 .rite-empty {
@@ -313,6 +373,22 @@
   background: rgba(15,5,10,0.3);
   border-left: 3px solid #888;
   color: var(--text-secondary);
+  cursor: grab; transition: all 0.2s;
+}
+.tl-task-draggable:hover {
+  background: rgba(212,168,85,0.04);
+  border-left-color: currentColor;
+}
+.tl-task-draggable.dragging {
+  opacity: 0.4; cursor: grabbing;
+}
+.tl-task-draggable.drag-over {
+  box-shadow: 0 -2px 0 #d4a855;
+  background: rgba(212,168,85,0.06);
+}
+.tl-drag-handle {
+  display: flex; align-items: center;
+  cursor: grab; margin-right: 2px;
 }
 .tl-block-text {
   flex: 1; min-width: 0;
@@ -334,19 +410,47 @@
   opacity: 0.6;
 }
 
-/* Day's Rite panel wrapper */
+/* Day's Rite panel wrapper — enchanted like sections */
 .rite-panel {
-  background: rgba(10,3,8,0.6);
-  border: 1px solid rgba(208,104,136,0.15);
+  --rite-accent: #d06888;
+  --rite-accent-light: #e890aa;
+  background: var(--bg-card);
+  border: 1px solid var(--border-blood);
   border-radius: 3px;
   padding: 0;
   margin-bottom: 1.2rem;
   overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 4px 20px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(200,80,100,0.06);
+  backdrop-filter: blur(6px);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  animation: sectionBreathe 6s ease-in-out infinite alternate, fadeRise 0.6s ease-out both;
+}
+.rite-panel:hover {
+  border-color: rgba(160, 50, 70, 0.55);
+  box-shadow:
+    0 6px 30px rgba(0,0,0,0.6),
+    0 0 18px rgba(140,40,55,0.1),
+    inset 0 1px 0 rgba(200,80,100,0.12);
 }
 .rite-panel::before {
   content: '';
-  display: block;
+  position: absolute;
+  top: 0; left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, rgba(160,60,90,0.2), rgba(212,168,85,0.4), rgba(160,60,90,0.2));
-  opacity: 0.5;
+  background: var(--rite-accent);
+  opacity: 0.9;
+}
+.rite-panel::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 8px;
+  background: var(--rite-accent);
+  opacity: 0.1;
+  filter: blur(8px);
+  animation: barGlow 5s ease-in-out infinite alternate;
+  pointer-events: none;
 }
