@@ -13,6 +13,8 @@ import { initTemplates } from './js/templates.js';
 import { initArchive } from './js/archive.js';
 import { initReview } from './js/review.js';
 import { initUI } from './js/ui.js';
+import { initCalendar, renderCalendar } from './js/calendar.js';
+import { initDayRite, setRenderCalendar } from './js/dayrite.js';
 import { initCanvas } from './js/canvas/index.js';
 import { ALL_SECTIONS } from './js/constants.js';
 
@@ -31,6 +33,9 @@ initSelfCare();
 initTemplates();
 initArchive();
 initReview();
+initCalendar();
+initDayRite();
+setRenderCalendar(renderCalendar);
 initUI();
 
 // Update displays

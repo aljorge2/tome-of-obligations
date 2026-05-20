@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════
    LAYER 2 — EMBER PARTICLES with glow + trails
    ═══════════════════════════════════════════════ */
+import { bodyDoublingEnabled } from '../state.js';
+
 let partCanvas, partCtx, pW, pH;
 const embers = [];
 
@@ -48,21 +50,26 @@ export function initEmbers(){
 
 export function drawEmbers(){
   partCtx.clearRect(0, 0, pW, pH);
+  // Body doubling boost: warmer, brighter, more visible
+  const bdBoost = bodyDoublingEnabled ? 1.6 : 1;
+  const bdHueShift = bodyDoublingEnabled ? -12 : 0; // shift toward warmer tones
+
   for(const p of embers){
     p.flicker += p.flickerSpeed;
-    const a = p.alpha * (0.5 + 0.5 * Math.sin(p.flicker));
+    const a = Math.min(1, p.alpha * (0.5 + 0.5 * Math.sin(p.flicker)) * bdBoost);
     if(a < 0.008) continue;
 
     // Trail
     p.trail.push({x: p.x, y: p.y});
     if(p.trail.length > p.trailLen) p.trail.shift();
+    const h = p.hue + bdHueShift;
     if(p.trail.length > 1 && a > 0.06){
       for(let ti = 0; ti < p.trail.length - 1; ti++){
         const t = p.trail[ti];
         const ta = a * 0.18 * (ti / p.trail.length);
         partCtx.beginPath();
         partCtx.arc(t.x, t.y, p.r * 0.55, 0, Math.PI * 2);
-        partCtx.fillStyle = `hsla(${p.hue},${p.sat}%,${p.light}%,${ta})`;
+        partCtx.fillStyle = `hsla(${h},${p.sat}%,${p.light}%,${ta})`;
         partCtx.fill();
       }
     }
@@ -70,14 +77,14 @@ export function drawEmbers(){
     // Main dot
     partCtx.beginPath();
     partCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    partCtx.fillStyle = `hsla(${p.hue},${p.sat}%,${p.light}%,${a})`;
+    partCtx.fillStyle = `hsla(${h},${p.sat}%,${p.light}%,${a})`;
     partCtx.fill();
 
     // Glow halo
     if(a > 0.08 && p.r > 0.45){
       partCtx.beginPath();
-      partCtx.arc(p.x, p.y, p.r * 4.5, 0, Math.PI * 2);
-      partCtx.fillStyle = `hsla(${p.hue},${p.sat}%,${p.light}%,${a * 0.12})`;
+      partCtx.arc(p.x, p.y, p.r * (bodyDoublingEnabled ? 6 : 4.5), 0, Math.PI * 2);
+      partCtx.fillStyle = `hsla(${h},${p.sat}%,${p.light}%,${a * (bodyDoublingEnabled ? 0.18 : 0.12)})`;
       partCtx.fill();
     }
 

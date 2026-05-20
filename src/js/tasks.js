@@ -2,7 +2,7 @@
 import { esc, uid, formatDuration } from './utils.js';
 import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES } from './constants.js';
 import {
-  state, saveState, recordCompletion, logTaskAddition, getAvgTime,
+  state, saveState, recordCompletion, unrecordCompletion, logTaskAddition, getAvgTime,
   loadChecklistMemory, saveChecklistMemory, rememberChecklist, recallChecklist,
   lockedInTaskId, focusPeekMode
 } from './state.js';
@@ -247,6 +247,8 @@ export function buildTaskEl(sec, task){
       if(!wasDone && taskObj.done){
         recordCompletion();
         checkSectionCleared(sec);
+      } else if(wasDone && !taskObj.done){
+        unrecordCompletion();
       }
     }
     else if(act==='begin-focus'){ enterLockIn(task.id); e.stopPropagation(); }

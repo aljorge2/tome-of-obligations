@@ -7,6 +7,8 @@ import {
 } from './state.js';
 import { renderSection } from './tasks.js';
 import { updateFocusPanel, updateBurdenBars, updateTabBadges, exitLockIn } from './focus.js';
+import { renderCalendar } from './calendar.js';
+import { renderDayRite, setSwitchPage } from './dayrite.js';
 import { lockedInTaskId } from './state.js';
 
 /* ═══ TAB NAVIGATION ═══ */
@@ -16,6 +18,9 @@ export function switchPage(page){
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + page));
   saveState();
   updateFocusPanel();
+  // Refresh views when switching to them
+  if(page === 'calendar') renderCalendar();
+  if(page === 'dayrite') renderDayRite();
 }
 
 /* ═══ THOUGHT CATCHER ═══ */
@@ -95,6 +100,8 @@ export function initUI(){
   document.querySelectorAll('.tome-tab').forEach(tab => {
     tab.addEventListener('click', () => switchPage(tab.dataset.page));
   });
+  // Give Day's Rite access to switchPage
+  setSwitchPage(switchPage);
   // Restore active page
   switchPage(state.activePage || 'work');
 

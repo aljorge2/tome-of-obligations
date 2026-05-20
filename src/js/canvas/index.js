@@ -5,7 +5,7 @@ import { initOrbs, drawOrbs } from './orbs.js';
 import { initCandle, updateCandle } from './candle.js';
 import { initCeleb, drawCelebration } from './celebration.js';
 
-export { miniSparkBurst, spellSealBurst } from './celebration.js';
+export { miniSparkBurst, spellSealBurst, pomodoroBurst } from './celebration.js';
 
 function onResize() {
   initFog(); initEmbers(); initSigils(); initOrbs(); initCeleb();

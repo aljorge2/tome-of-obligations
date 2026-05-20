@@ -44,7 +44,7 @@ export function setFocusPeekMode(val) { focusPeekMode = val; }
 
 /* ═══ POMODORO STATE ═══ */
 export let pomodoroPhase = 'work'; // 'work' | 'break'
-export let pomodoroWorkMs = 25 * 60 * 1000;
+export let pomodoroWorkMs = 30 * 60 * 1000;
 export let pomodoroBreakMs = 5 * 60 * 1000;
 export let pomodoroPhaseStart = null;
 export let pomodoroCount = 0;
@@ -56,6 +56,8 @@ export function setPomodoroPhase(val) { pomodoroPhase = val; }
 export function setPomodoroPhaseStart(val) { pomodoroPhaseStart = val; }
 export function setPomodoroCount(val) { pomodoroCount = val; }
 export function setPomodoroEnabled(val) { pomodoroEnabled = val; }
+export function setPomodoroWorkMs(val) { pomodoroWorkMs = val; }
+export function setPomodoroBreakMs(val) { pomodoroBreakMs = val; }
 export function setBodyDoublingEnabled(val) { bodyDoublingEnabled = val; }
 export function setBodyDoublingInterval(val) { bodyDoublingInterval = val; }
 
@@ -144,6 +146,23 @@ export function recordCompletion() {
   // Prune entries older than 8 days
   const cutoff = new Date(Date.now() - 8 * 86400000).toISOString();
   tally.completions = tally.completions.filter(d => d >= cutoff);
+  saveTally(tally);
+  updateTallyDisplay();
+}
+
+export function unrecordCompletion() {
+  const tally = loadTally();
+  // Remove the most recent completion from today
+  const todayStart = new Date();
+  todayStart.setHours(0,0,0,0);
+  const todayKey = todayStart.toISOString();
+  // Find the last entry that's from today and remove it
+  for(let i = tally.completions.length - 1; i >= 0; i--){
+    if(tally.completions[i] >= todayKey){
+      tally.completions.splice(i, 1);
+      break; // only remove one
+    }
+  }
   saveTally(tally);
   updateTallyDisplay();
 }

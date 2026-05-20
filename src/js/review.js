@@ -3,77 +3,7 @@ import { esc, formatDuration } from './utils.js';
 import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES } from './constants.js';
 import { state, loadTally, loadArchive } from './state.js';
 import { scoreTask, detectAvoidance } from './scry.js';
-
-function generateWeeklyPlan(){
-  // Get all open tasks with estimates, sorted by score
-  const allTasks = [];
-  ALL_SECTIONS.forEach(sec => {
-    (state[sec]||[]).forEach(t => {
-      if(!t.done) allTasks.push({...t, sec});
-    });
-  });
-
-  // Score them
-  allTasks.forEach(t => {
-    const s = scoreTask(t);
-    t._score = s.score;
-    t._reason = s.reason;
-  });
-  allTasks.sort((a,b) => b._score - a._score);
-
-  // Distribute across weekdays (Mon-Fri, 3 per day, lighter on weekends)
-  const now = new Date();
-  const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0
-  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const plan = {};
-  const perDay = [3,3,3,3,3,2,2]; // Mon-Sun task counts
-
-  let taskIdx = 0;
-  for(let d = 0; d < 7; d++){
-    const dayOffset = d - dayOfWeek;
-    const date = new Date(now.getTime() + dayOffset * 86400000);
-    const key = dayNames[d];
-    const dateStr = date.toISOString().slice(0,10);
-    plan[key] = { date: dateStr, tasks: [], isToday: dayOffset === 0, isPast: dayOffset < 0 };
-
-    // Assign tasks (skip past days for new assignments)
-    if(dayOffset >= 0){
-      const count = perDay[d];
-      for(let j = 0; j < count && taskIdx < allTasks.length; j++){
-        plan[key].tasks.push(allTasks[taskIdx]);
-        taskIdx++;
-      }
-    }
-  }
-
-  return plan;
-}
-
-function renderWeeklyPlan(containerId){
-  const plan = generateWeeklyPlan();
-  const container = document.getElementById(containerId);
-  if(!container) return;
-
-  let html = '<div class="weekplan-section">';
-  Object.entries(plan).forEach(([day, info]) => {
-    const todayCls = info.isToday ? ' today' : '';
-    html += `<div class="weekplan-day">
-      <span class="weekplan-dayname${todayCls}">${day}</span>
-      <div class="weekplan-tasks">`;
-    if(info.tasks.length){
-      info.tasks.forEach(t => {
-        const est = t.estimate ? `<span class="weekplan-est">~${t.estimate}m</span>` : '';
-        const dot = `<span style="color:${SECTION_COLORS[t.sec]||'#888'};font-size:8px">●</span>`;
-        html += `<div class="weekplan-task">${dot} ${esc(t.text)} ${est}</div>`;
-      });
-    } else {
-      html += `<div class="weekplan-task" style="color:#4a2a35;font-style:italic">${info.isPast ? 'past' : 'rest'}</div>`;
-    }
-    html += '</div></div>';
-  });
-  html += '</div>';
-  container.innerHTML = html;
-}
+import { renderCalendar } from './calendar.js';
 
 export function openWeeklyReview(){
   const now = new Date();
@@ -161,11 +91,11 @@ export function openWeeklyReview(){
     </div>`;
   }
 
-  // Weekly plan section
-  html += '<div class="scry-section"><div class="scry-section-title">This Week\'s Plan</div><div id="review-weekplan"></div></div>';
+  // Weekly plan section — render the actual calendar
+  html += '<div class="scry-section"><div class="scry-section-title">This Week\'s Prophecy</div><div id="review-weekplan" class="cal-panel"></div></div>';
 
   bodyEl.innerHTML = html;
-  renderWeeklyPlan('review-weekplan');
+  renderCalendar({ targetId: 'review-weekplan', forceView: '7day' });
 
   document.getElementById('review-overlay').classList.add('open');
 }

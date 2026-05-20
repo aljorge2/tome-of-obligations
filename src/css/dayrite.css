@@ -1,0 +1,352 @@
+/* ─── The Day's Rite ─── */
+
+/* Header */
+.rite-header {
+  text-align: center;
+  padding: 0.8rem 1rem 0.5rem;
+}
+.rite-title-row {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-bottom: 4px;
+}
+.rite-title {
+  font-family: 'Cinzel Decorative', serif; font-weight: 700;
+  font-size: 16px; color: var(--text-primary);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 12px rgba(212,168,85,0.12);
+}
+.rite-date-row {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.rite-date-label {
+  font-family: 'Crimson Text', serif; font-size: 14px;
+  color: #d06888; font-style: italic;
+}
+.rite-nav-btn {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(140,60,80,0.15);
+  color: var(--text-muted); background: transparent;
+  transition: all 0.2s; user-select: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.rite-nav-btn:hover {
+  color: var(--text-secondary);
+  border-color: rgba(208,104,136,0.25);
+}
+
+/* ── Capacity Bar ── */
+.rite-capacity {
+  padding: 0 1rem 0.5rem;
+}
+.rite-capacity-bar {
+  width: 100%; height: 6px;
+  background: rgba(80,30,40,0.25);
+  border-radius: 3px; overflow: hidden;
+  margin-bottom: 4px;
+}
+.rite-capacity-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(60,168,85,0.7), rgba(212,168,85,0.7));
+  border-radius: 3px; transition: width 0.4s;
+}
+.rite-capacity-fill.high {
+  background: linear-gradient(90deg, rgba(212,168,85,0.7), rgba(208,104,136,0.6));
+}
+.rite-capacity-fill.over {
+  background: linear-gradient(90deg, rgba(208,104,136,0.7), rgba(200,60,60,0.7));
+}
+.rite-capacity-text {
+  display: flex; justify-content: space-between;
+  font-family: 'Crimson Text', serif; font-size: 11px;
+  color: var(--text-muted);
+}
+.rite-over-warning {
+  font-family: 'Crimson Text', serif; font-size: 11px;
+  color: #c07060; font-style: italic;
+  text-align: center; margin-top: 2px;
+}
+
+/* ── View Toggle ── */
+.rite-view-toggle {
+  display: flex; justify-content: center; gap: 2px;
+  padding: 0 1rem 0.5rem;
+}
+.rite-view-btn {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 10px; cursor: pointer;
+  border: 1px solid rgba(140,60,80,0.15);
+  color: var(--text-muted); background: rgba(20,5,10,0.2);
+  transition: all 0.2s; user-select: none;
+  display: flex; align-items: center; gap: 4px;
+}
+.rite-view-btn:first-child { border-radius: 3px 0 0 3px; }
+.rite-view-btn:last-child { border-radius: 0 3px 3px 0; }
+.rite-view-btn.active {
+  color: #d4a855; background: rgba(212,168,85,0.1);
+  border-color: rgba(212,168,85,0.25);
+}
+
+/* ── Add Meeting ── */
+.rite-add-meeting {
+  padding: 0.4rem 0.8rem;
+  border-top: 1px solid rgba(140,60,80,0.08);
+  border-bottom: 1px solid rgba(140,60,80,0.08);
+}
+.rite-meeting-label {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 4px;
+  display: flex; align-items: center; gap: 4px;
+}
+.rite-meeting-inputs {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.rite-input {
+  font-family: 'Crimson Text', serif; font-size: 12px;
+  background: rgba(15,5,10,0.5);
+  border: 1px solid rgba(140,60,80,0.15);
+  border-radius: 2px; padding: 4px 6px;
+  color: var(--text-secondary); outline: none;
+  transition: border-color 0.2s;
+}
+.rite-input:focus { border-color: rgba(212,168,85,0.35); }
+.rite-input::placeholder { color: var(--text-muted); }
+.rite-input[type="text"] { flex: 1; min-width: 100px; }
+.rite-time-input { width: 70px; font-size: 11px; color-scheme: dark; }
+.rite-meeting-to {
+  font-family: 'Crimson Text', serif; font-size: 11px;
+  color: var(--text-muted); font-style: italic;
+}
+.rite-meeting-add-btn {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(212,168,85,0.2);
+  color: #d4a855; background: rgba(212,168,85,0.06);
+  transition: all 0.2s;
+}
+.rite-meeting-add-btn:hover {
+  background: rgba(212,168,85,0.15);
+  box-shadow: 0 0 6px rgba(212,168,85,0.1);
+}
+
+/* ── Meeting blocks ── */
+.rite-meetings {
+  padding: 0.3rem 0.8rem;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.rite-meeting-block {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px; border-radius: 2px;
+  background: rgba(212,168,85,0.05);
+  border-left: 3px solid #d4a855;
+}
+.rite-meeting-text {
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  color: var(--text-secondary); flex: 1;
+}
+.rite-meeting-time {
+  font-family: 'Cinzel', serif; font-size: 8px;
+  letter-spacing: 0.06em; color: #d4a855;
+  white-space: nowrap;
+}
+
+/* ── Task List ── */
+.rite-task-list {
+  padding: 0.3rem 0.6rem;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.rite-task {
+  display: flex; align-items: flex-start; gap: 6px;
+  padding: 6px 8px; border-radius: 2px;
+  background: rgba(15,5,10,0.3);
+  transition: all 0.2s;
+  cursor: grab;
+  position: relative;
+}
+.rite-task:hover { background: rgba(20,8,14,0.5); }
+.rite-task.dragging {
+  opacity: 0.3;
+  border: 1px dashed rgba(212,168,85,0.3);
+}
+.rite-task.drag-over {
+  border-top: 2px solid rgba(212,168,85,0.5);
+}
+
+/* Seal animation */
+.rite-task.sealing {
+  opacity: 0;
+  transform: translateX(20px) scale(0.95);
+  transition: opacity 0.6s, transform 0.6s;
+}
+
+.rite-task-seq {
+  font-family: 'Cinzel Decorative', serif; font-weight: 700;
+  font-size: 11px; color: #d06888; min-width: 16px;
+  text-align: center; margin-top: 2px;
+  text-shadow: 0 0 6px rgba(208,104,136,0.2);
+}
+.rite-task-dot {
+  width: 6px; height: 6px; min-width: 6px;
+  border-radius: 50%; margin-top: 6px;
+}
+.rite-task-body {
+  flex: 1; min-width: 0;
+}
+.rite-task-text {
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  color: var(--text-secondary); line-height: 1.3;
+}
+.rite-task-meta {
+  font-family: 'Cinzel', serif; font-size: 7px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-muted); margin-top: 1px;
+}
+.rite-task-est {
+  color: var(--text-muted);
+}
+.rite-task-reason {
+  font-family: 'Crimson Text', serif; font-size: 9px;
+  color: rgba(208,104,136,0.45); font-style: italic;
+  margin-top: 1px;
+}
+
+/* Check button */
+.rite-task-actions {
+  display: flex; align-items: center;
+  flex-shrink: 0; margin-top: 2px;
+  opacity: 0; transition: opacity 0.2s;
+}
+.rite-task:hover .rite-task-actions { opacity: 1; }
+.rite-check-btn {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(60,168,85,0.3);
+  color: #3da855; background: rgba(60,168,85,0.06);
+  transition: all 0.2s;
+}
+.rite-check-btn:hover {
+  background: rgba(60,168,85,0.18);
+  box-shadow: 0 0 8px rgba(60,168,85,0.15);
+}
+
+/* Empty state */
+.rite-empty {
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  color: #5a4030; font-style: italic;
+  text-align: center; padding: 20px 0;
+}
+
+/* ── Overflow ── */
+.rite-overflow {
+  padding: 0.4rem 0.8rem;
+  border-top: 1px solid rgba(140,50,60,0.1);
+}
+.rite-overflow-title {
+  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 5px;
+  margin-bottom: 4px;
+}
+.rite-overflow-count {
+  font-family: 'Crimson Text', serif; font-size: 10px;
+  color: #d06888;
+}
+.rite-overflow-list {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.rite-overflow-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 2px 6px;
+  font-family: 'Crimson Text', serif; font-size: 12px;
+}
+.rite-overflow-text {
+  color: var(--text-muted); flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rite-overflow-est {
+  font-size: 10px; color: var(--text-muted); font-style: italic;
+  white-space: nowrap;
+}
+.rite-overflow-more {
+  font-family: 'Crimson Text', serif; font-size: 11px;
+  color: #5a3a35; font-style: italic;
+  text-align: center; padding: 3px 0;
+}
+
+/* ── Timeline View ── */
+.rite-timeline {
+  padding: 0.3rem 0.6rem;
+}
+.tl-hour {
+  display: flex; gap: 8px;
+  min-height: 32px;
+  border-bottom: 1px solid rgba(80,30,40,0.1);
+}
+.tl-hour-label {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.04em; color: var(--text-muted);
+  min-width: 30px; text-align: right;
+  padding-top: 4px;
+}
+.tl-hour-content {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 3px 0;
+}
+.tl-block {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 6px; border-radius: 2px;
+  font-family: 'Crimson Text', serif; font-size: 12px;
+}
+.tl-meeting {
+  background: rgba(212,168,85,0.08);
+  border-left: 3px solid #d4a855;
+  color: var(--text-secondary);
+}
+.tl-task {
+  background: rgba(15,5,10,0.3);
+  border-left: 3px solid #888;
+  color: var(--text-secondary);
+}
+.tl-block-text {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tl-block-time {
+  font-family: 'Cinzel', serif; font-size: 7px;
+  letter-spacing: 0.04em; color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Reassurance ── */
+.rite-reassurance {
+  text-align: center;
+  padding: 0.6rem 1rem 0.7rem;
+  border-top: 1px solid rgba(212,168,85,0.08);
+  font-family: 'Crimson Text', serif; font-size: 12px;
+  font-style: italic; color: #d4a855;
+  opacity: 0.6;
+}
+
+/* Day's Rite panel wrapper */
+.rite-panel {
+  background: rgba(10,3,8,0.6);
+  border: 1px solid rgba(208,104,136,0.15);
+  border-radius: 3px;
+  padding: 0;
+  margin-bottom: 1.2rem;
+  overflow: hidden;
+}
+.rite-panel::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(160,60,90,0.2), rgba(212,168,85,0.4), rgba(160,60,90,0.2));
+  opacity: 0.5;
+}

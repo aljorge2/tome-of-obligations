@@ -3,6 +3,8 @@
    Large translucent elliptical blobs that crawl
    across the viewport. Crimson & violet hues.
    ═══════════════════════════════════════════════ */
+import { bodyDoublingEnabled } from '../state.js';
+
 let fogCanvas, fogCtx, fogW, fogH;
 const fogBlobs = [];
 
@@ -33,14 +35,19 @@ export function initFog(){
 
 export function drawFog(){
   fogCtx.clearRect(0, 0, fogW, fogH);
+  // Body doubling: warmer, denser fog — hearth presence
+  const bdAlphaBoost = bodyDoublingEnabled ? 1.5 : 1;
+  const bdHueWarm = bodyDoublingEnabled ? -15 : 0; // push toward warmer reds/ambers
+
   for(const b of fogBlobs){
     b.phase += b.phaseSpeed;
     const breathe = 0.65 + 0.35 * Math.sin(b.phase);
-    const a = b.alpha * breathe;
+    const a = Math.min(0.12, b.alpha * breathe * bdAlphaBoost);
+    const h = b.hue + bdHueWarm;
     const grad = fogCtx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.rx);
-    grad.addColorStop(0, `hsla(${b.hue},${b.sat}%,${b.light}%,${a})`);
-    grad.addColorStop(0.5, `hsla(${b.hue},${b.sat}%,${b.light}%,${a * 0.35})`);
-    grad.addColorStop(1, `hsla(${b.hue},${b.sat}%,${b.light}%,0)`);
+    grad.addColorStop(0, `hsla(${h},${b.sat}%,${b.light}%,${a})`);
+    grad.addColorStop(0.5, `hsla(${h},${b.sat}%,${b.light}%,${a * 0.35})`);
+    grad.addColorStop(1, `hsla(${h},${b.sat}%,${b.light}%,0)`);
     fogCtx.save();
     fogCtx.translate(b.x, b.y);
     fogCtx.scale(1, b.ry / b.rx);

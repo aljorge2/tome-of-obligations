@@ -8,11 +8,12 @@ import {
   lockinTimerInterval, setLockinTimerInterval,
   focusPeekMode, setFocusPeekMode,
   pomodoroPhase, setPomodoroPhase, pomodoroPhaseStart, setPomodoroPhaseStart,
-  pomodoroWorkMs, pomodoroBreakMs, pomodoroCount, setPomodoroCount,
+  pomodoroWorkMs, pomodoroBreakMs, setPomodoroWorkMs, setPomodoroBreakMs,
+  pomodoroCount, setPomodoroCount,
   pomodoroEnabled, setPomodoroEnabled,
-  bodyDoublingEnabled, setBodyDoublingEnabled, bodyDoublingInterval, setBodyDoublingInterval
+  bodyDoublingEnabled, setBodyDoublingEnabled
 } from './state.js';
-import { miniSparkBurst, spellSealBurst } from './canvas/index.js';
+import { miniSparkBurst, spellSealBurst, pomodoroBurst } from './canvas/index.js';
 import { on } from './events.js';
 import { renderSection, checkSectionCleared } from './tasks.js';
 import { generateRecommendations, scoreTask } from './scry.js';
@@ -20,7 +21,9 @@ import { generateRecommendations, scoreTask } from './scry.js';
 export function updateFocusPanel(){
   const body = document.getElementById('focus-body');
   const activePage = state.activePage || 'work';
-  const pageSecs = activePage === 'hearth' ? HEARTH_SECS : WORK_SECS;
+  const pageSecs = activePage === 'hearth' ? HEARTH_SECS
+                 : (activePage === 'calendar' || activePage === 'dayrite') ? ALL_SECTIONS
+                 : WORK_SECS;
 
   const allTasks = [];
   pageSecs.forEach(sec => {
@@ -147,34 +150,10 @@ export function updateTabBadges(){
   if(bh) bh.textContent = hearthOpen > 0 ? `(${hearthOpen})` : '';
 }
 
-/* ═══ BODY DOUBLING CHECK-INS ═══ */
-const BODY_DOUBLING_MESSAGES = [
-  'still with us, keeper?',
-  'the tome watches over you',
-  'breathe. you\'re doing well.',
-  'steady hands, steady mind.',
-  'one step at a time.',
-  'the fire burns for you.',
-  'you haven\'t been forgotten.',
-  'focus flows through you.',
-  'the path is yours — keep walking.',
-  'almost there. keep going.',
-];
-let lastCheckinTime = 0;
-
-function showBodyDoubleCheckin(){
-  if(!bodyDoublingEnabled || !lockedInTaskId) return;
-  const now = Date.now();
-  if(now - lastCheckinTime < 8 * 60 * 1000) return; // Min 8 min between
-  lastCheckinTime = now;
-  const msg = BODY_DOUBLING_MESSAGES[Math.floor(Math.random() * BODY_DOUBLING_MESSAGES.length)];
-  const el = document.getElementById('body-double-msg');
-  if(el){
-    el.textContent = msg;
-    el.classList.add('visible');
-    setTimeout(() => el.classList.remove('visible'), 5000);
-  }
-}
+/* ═══ BODY DOUBLING — ambient presence via enhanced canvas ═══ */
+// No text messages — body doubling is pure atmosphere.
+// The canvas layers (embers, fog, candle) read bodyDoublingEnabled
+// and boost their effects to create a warm "someone is here" feeling.
 
 /* ═══ POMODORO PHASE MANAGEMENT ═══ */
 function startPomodoroPhase(phase){
@@ -206,8 +185,9 @@ function updatePomodoroDisplay(){
     if(breakOverlay) breakOverlay.classList.remove('visible');
 
     if(remaining <= 0){
-      // Time's up — trigger break
+      // Time's up — trigger break with celebration
       setPomodoroCount(pomodoroCount + 1);
+      pomodoroBurst('work'); // fire celebration for completing a work session
       startPomodoroPhase('break');
       if(breakOverlay) breakOverlay.classList.add('visible');
     }
@@ -218,7 +198,8 @@ function updatePomodoroDisplay(){
     if(breakEl) breakEl.textContent = `${mins}m ${String(secs).padStart(2,'0')}s`;
 
     if(remaining <= 0){
-      // Break over — back to work
+      // Break over — cool refreshing burst, back to work
+      pomodoroBurst('break');
       startPomodoroPhase('work');
       if(breakOverlay) breakOverlay.classList.remove('visible');
     }
@@ -238,10 +219,7 @@ export function enterLockIn(taskId){
     startPomodoroPhase('work');
   }
 
-  // Start body doubling
-  lastCheckinTime = Date.now(); // Don't check in immediately
-  if(bodyDoublingInterval) clearInterval(bodyDoublingInterval);
-  setBodyDoublingInterval(setInterval(showBodyDoubleCheckin, 60 * 1000)); // Check every minute
+  // Body doubling is handled by canvas layers reading bodyDoublingEnabled directly
 
   // Get accumulated time on this task
   let task = null;
@@ -324,9 +302,16 @@ export function populateLockinCard(taskId){
     html += `</div>`;
   }
 
-  // Pomodoro burn bar
+  // Pomodoro burn bar + preset picker
+  const workMins = Math.round(pomodoroWorkMs / 60000);
+  const breakMins = Math.round(pomodoroBreakMs / 60000);
+  const presets = [{w:30,b:5},{w:60,b:10},{w:90,b:15},{w:120,b:20}];
+
   html += `<div class="pomo-section">
     <div class="pomo-burn-track"><div class="pomo-burn-fill" id="pomo-burn" style="width:100%"></div></div>
+    <div class="pomo-presets">
+      ${presets.map(p => `<span class="pomo-preset${p.w === workMins && p.b === breakMins ? ' active' : ''}" data-pomo-w="${p.w}" data-pomo-b="${p.b}">${p.w}/${p.b}</span>`).join('')}
+    </div>
     <div class="pomo-controls">
       <span class="pomo-toggle${pomodoroEnabled ? ' active' : ''}" id="pomo-toggle" title="Toggle pomodoro timer">
         <i class="ti ti-flame" style="font-size:11px"></i> ${pomodoroEnabled ? 'ON' : 'OFF'}
@@ -337,9 +322,6 @@ export function populateLockinCard(taskId){
       ${pomodoroCount > 0 ? `<span style="font-family:Cinzel,serif;font-size:8px;color:var(--gold-dim);letter-spacing:0.08em">${pomodoroCount} pomodoro${pomodoroCount > 1 ? 's' : ''}</span>` : ''}
     </div>
   </div>`;
-
-  // Body doubling message area
-  html += `<div class="body-double-msg" id="body-double-msg"></div>`;
 
   // Pomodoro break overlay
   html += `<div class="pomo-break-overlay" id="pomo-break-overlay">
@@ -421,18 +403,26 @@ export function populateLockinCard(taskId){
     });
   }
 
-  // Body doubling toggle
+  // Pomodoro preset buttons
+  card.querySelectorAll('.pomo-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const w = parseInt(btn.dataset.pomoW);
+      const b = parseInt(btn.dataset.pomoB);
+      setPomodoroWorkMs(w * 60 * 1000);
+      setPomodoroBreakMs(b * 60 * 1000);
+      // Restart current phase with new duration
+      if(pomodoroEnabled && lockedInTaskId){
+        startPomodoroPhase(pomodoroPhase);
+      }
+      populateLockinCard(taskId);
+    });
+  });
+
+  // Body doubling toggle — canvas layers read this flag directly
   const bdToggle = document.getElementById('bd-toggle');
   if(bdToggle){
     bdToggle.addEventListener('click', () => {
       setBodyDoublingEnabled(!bodyDoublingEnabled);
-      if(!bodyDoublingEnabled && bodyDoublingInterval){
-        clearInterval(bodyDoublingInterval);
-        setBodyDoublingInterval(null);
-      } else if(bodyDoublingEnabled && !bodyDoublingInterval){
-        lastCheckinTime = Date.now();
-        setBodyDoublingInterval(setInterval(showBodyDoubleCheckin, 60 * 1000));
-      }
       populateLockinCard(taskId);
     });
   }
@@ -475,8 +465,8 @@ export function exitLockIn(){
   setPomodoroPhaseStart(null);
   setPomodoroCount(0);
 
-  // Stop body doubling
-  if(bodyDoublingInterval){ clearInterval(bodyDoublingInterval); setBodyDoublingInterval(null); }
+  // Reset body doubling (canvas layers will stop boosting)
+  setBodyDoublingEnabled(false);
 
   updateFocusPanel();
 }

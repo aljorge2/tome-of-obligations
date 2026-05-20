@@ -241,6 +241,29 @@
   transition: width 1s linear;
   box-shadow: 0 0 6px rgba(224,128,64,0.3);
 }
+/* Pomodoro preset selector */
+.pomo-presets {
+  display: flex; align-items: center; gap: 4px;
+  justify-content: center; margin-bottom: 5px;
+}
+.pomo-preset {
+  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(140,60,80,0.15);
+  color: var(--text-muted); background: rgba(20,5,10,0.2);
+  transition: all 0.2s;
+}
+.pomo-preset:hover {
+  border-color: rgba(224,128,64,0.3);
+  color: var(--text-secondary);
+}
+.pomo-preset.active {
+  color: #e08040; border-color: rgba(224,128,64,0.4);
+  background: rgba(224,128,64,0.1);
+  box-shadow: 0 0 4px rgba(224,128,64,0.1);
+}
+
 .pomo-controls {
   display: flex; align-items: center; gap: 8px;
   justify-content: center;
@@ -296,15 +319,4 @@
 }
 .pomo-skip-break:hover { color: var(--text-secondary); border-color: rgba(140,80,90,0.3); }
 
-/* ─── Body Doubling ─── */
-.body-double-msg {
-  text-align: center; padding: 0;
-  font-family: 'Crimson Text', serif; font-size: 12px;
-  font-style: italic; color: #d4a855;
-  opacity: 0; max-height: 0;
-  transition: opacity 0.8s ease, max-height 0.5s ease, padding 0.5s ease;
-  overflow: hidden;
-}
-.body-double-msg.visible {
-  opacity: 0.7; max-height: 30px; padding: 6px 0 4px;
-}
+/* Body doubling is now purely ambient canvas effects — no text UI needed */

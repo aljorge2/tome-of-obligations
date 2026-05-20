@@ -170,6 +170,123 @@ export function spellSealBurst(cx, cy, sec){
   });
 }
 
+/* ═══ POMODORO BURST — work session / break completed ═══ */
+export function pomodoroBurst(type){
+  // type: 'work' = completed a work session, 'break' = break ended
+  const cx = celebW / 2;
+  const cy = celebH * 0.35;
+
+  if(type === 'work'){
+    // Work session done — warm celebratory burst (fire + gold tones)
+    // Screen flash — warm amber
+    spellFlash.style.background = `radial-gradient(circle at ${cx}px ${cy}px, hsla(35,85%,65%,0.3) 0%, hsla(20,70%,45%,0.08) 45%, transparent 70%)`;
+    spellFlash.style.opacity = '1';
+    setTimeout(()=>{ spellFlash.style.opacity = '0'; }, 250);
+
+    // Two expanding rings — fire colors
+    for(let i = 0; i < 2; i++){
+      celebRings.push({
+        x: cx, y: cy,
+        radius: 8,
+        maxRadius: 180 + i * 80,
+        speed: 3 + i * 0.6,
+        alpha: 0.5 - i * 0.1,
+        lineWidth: 2.5 - i * 0.5,
+        hue: 25 + i * 15,
+        sat: 80,
+        light: 60,
+      });
+    }
+
+    // 60 fire sparks spiraling outward
+    const sparkCount = 60 + Math.floor(Math.random() * 20);
+    for(let i = 0; i < sparkCount; i++){
+      const angle = (Math.PI * 2 * i / sparkCount) + (Math.random() - 0.5) * 0.4;
+      const speed = 1 + Math.random() * 4;
+      const hue = 15 + Math.random() * 40; // oranges to golds
+      celebParticles.push({
+        x: cx, y: cy,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed - 0.5,
+        r: 1 + Math.random() * 2.5,
+        alpha: 0.8 + Math.random() * 0.2,
+        decay: 0.01 + Math.random() * 0.01,
+        hue, sat: 75 + Math.random() * 20, light: 55 + Math.random() * 20,
+        gravity: 0.015 + Math.random() * 0.02,
+        trail: [], trailLen: 4 + Math.floor(Math.random() * 4),
+      });
+    }
+
+    // Rising flame runes
+    const runeCount = 8 + Math.floor(Math.random() * 5);
+    for(let i = 0; i < runeCount; i++){
+      const angle = (Math.PI * 2 * i / runeCount) + (Math.random() - 0.5) * 0.3;
+      celebRunes.push({
+        x: cx + (Math.random() - 0.5) * 60,
+        y: cy + (Math.random() - 0.5) * 30,
+        dx: Math.cos(angle) * 0.8,
+        dy: -0.8 - Math.random() * 1.5, // rise upward like heat
+        alpha: 0.65 + Math.random() * 0.3,
+        decay: 0.005 + Math.random() * 0.004,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.06,
+        size: 10 + Math.random() * 12,
+        shape: RUNE_SHAPES[Math.floor(Math.random() * RUNE_SHAPES.length)],
+        hue: 30 + Math.random() * 20,
+        sat: 75, light: 65,
+      });
+    }
+
+    // Central warm glow
+    celebParticles.push({
+      x: cx, y: cy, dx: 0, dy: 0, r: 12,
+      alpha: 0.9, decay: 0.012,
+      hue: 30, sat: 80, light: 65,
+      gravity: 0, trail: [], trailLen: 0,
+      isCore: true, expandRate: 2.2,
+    });
+
+  } else {
+    // Break ended — cool refreshing burst (teal + silver)
+    spellFlash.style.background = `radial-gradient(circle at ${cx}px ${cy}px, hsla(190,70%,65%,0.25) 0%, hsla(200,50%,40%,0.06) 45%, transparent 70%)`;
+    spellFlash.style.opacity = '1';
+    setTimeout(()=>{ spellFlash.style.opacity = '0'; }, 200);
+
+    // Single crisp ring
+    celebRings.push({
+      x: cx, y: cy,
+      radius: 5,
+      maxRadius: 140,
+      speed: 4,
+      alpha: 0.45,
+      lineWidth: 2,
+      hue: 195,
+      sat: 60,
+      light: 65,
+    });
+
+    // 35 cool sparks — like morning dew catching light
+    for(let i = 0; i < 35; i++){
+      const angle = (Math.PI * 2 * i / 35) + (Math.random() - 0.5) * 0.5;
+      const speed = 0.8 + Math.random() * 2.5;
+      const isSilver = Math.random() < 0.4;
+      celebParticles.push({
+        x: cx, y: cy,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed - 0.3,
+        r: 0.8 + Math.random() * 1.5,
+        alpha: 0.6 + Math.random() * 0.3,
+        decay: 0.015 + Math.random() * 0.012,
+        hue: isSilver ? 210 : 190 + Math.random() * 20,
+        sat: isSilver ? 15 : 55,
+        light: isSilver ? 80 : 60,
+        gravity: 0.01,
+        trail: [], trailLen: 3,
+      });
+    }
+  }
+}
+
 export function drawCelebration(){
   celebCtx.clearRect(0, 0, celebW, celebH);
   let hasActivity = false;
