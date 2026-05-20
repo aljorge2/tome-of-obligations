@@ -6,12 +6,16 @@ import {
   lockedInTaskId, setLockedInTaskId,
   lockinStartTime, setLockinStartTime,
   lockinTimerInterval, setLockinTimerInterval,
-  focusPeekMode, setFocusPeekMode
+  focusPeekMode, setFocusPeekMode,
+  pomodoroPhase, setPomodoroPhase, pomodoroPhaseStart, setPomodoroPhaseStart,
+  pomodoroWorkMs, pomodoroBreakMs, pomodoroCount, setPomodoroCount,
+  pomodoroEnabled, setPomodoroEnabled,
+  bodyDoublingEnabled, setBodyDoublingEnabled, bodyDoublingInterval, setBodyDoublingInterval
 } from './state.js';
 import { miniSparkBurst, spellSealBurst } from './canvas/index.js';
 import { on } from './events.js';
 import { renderSection, checkSectionCleared } from './tasks.js';
-import { generateRecommendations } from './scry.js';
+import { generateRecommendations, scoreTask } from './scry.js';
 
 export function updateFocusPanel(){
   const body = document.getElementById('focus-body');
@@ -55,16 +59,10 @@ export function updateFocusPanel(){
       if(info) t._reason = info.reason;
     });
   } else {
-    const prioScore = { critical:40, high:30, medium:20, low:10 };
     allTasks.forEach(t => {
-      let score = prioScore[t.priority] || 5;
-      if(t.createdAt){
-        const ageDays = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
-        score += Math.min(ageDays, 14);
-      }
-      const isUnbound = (!t.checklist || !t.checklist.length) && (!t.notes || !t.notes.trim());
-      if(isUnbound) score -= 15;
-      t._score = score;
+      const s = scoreTask(t);
+      t._score = s.score;
+      t._reason = s.reason;
     });
     allTasks.sort((a,b) => b._score - a._score);
     top = allTasks.slice(0, 5);
@@ -149,6 +147,84 @@ export function updateTabBadges(){
   if(bh) bh.textContent = hearthOpen > 0 ? `(${hearthOpen})` : '';
 }
 
+/* ═══ BODY DOUBLING CHECK-INS ═══ */
+const BODY_DOUBLING_MESSAGES = [
+  'still with us, keeper?',
+  'the tome watches over you',
+  'breathe. you\'re doing well.',
+  'steady hands, steady mind.',
+  'one step at a time.',
+  'the fire burns for you.',
+  'you haven\'t been forgotten.',
+  'focus flows through you.',
+  'the path is yours — keep walking.',
+  'almost there. keep going.',
+];
+let lastCheckinTime = 0;
+
+function showBodyDoubleCheckin(){
+  if(!bodyDoublingEnabled || !lockedInTaskId) return;
+  const now = Date.now();
+  if(now - lastCheckinTime < 8 * 60 * 1000) return; // Min 8 min between
+  lastCheckinTime = now;
+  const msg = BODY_DOUBLING_MESSAGES[Math.floor(Math.random() * BODY_DOUBLING_MESSAGES.length)];
+  const el = document.getElementById('body-double-msg');
+  if(el){
+    el.textContent = msg;
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), 5000);
+  }
+}
+
+/* ═══ POMODORO PHASE MANAGEMENT ═══ */
+function startPomodoroPhase(phase){
+  setPomodoroPhase(phase);
+  setPomodoroPhaseStart(Date.now());
+  updatePomodoroDisplay();
+}
+
+function updatePomodoroDisplay(){
+  const timerEl = document.getElementById('lockin-timer');
+  const breakOverlay = document.getElementById('pomo-break-overlay');
+  if(!timerEl) return;
+
+  if(!pomodoroEnabled || !lockedInTaskId){
+    if(breakOverlay) breakOverlay.classList.remove('visible');
+    return;
+  }
+
+  const elapsed = Date.now() - (pomodoroPhaseStart || Date.now());
+  const phaseMs = pomodoroPhase === 'work' ? pomodoroWorkMs : pomodoroBreakMs;
+  const remaining = Math.max(0, phaseMs - elapsed);
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+
+  if(pomodoroPhase === 'work'){
+    const pct = Math.min(1, elapsed / phaseMs);
+    const burnBar = document.getElementById('pomo-burn');
+    if(burnBar) burnBar.style.width = (100 - pct * 100) + '%';
+    if(breakOverlay) breakOverlay.classList.remove('visible');
+
+    if(remaining <= 0){
+      // Time's up — trigger break
+      setPomodoroCount(pomodoroCount + 1);
+      startPomodoroPhase('break');
+      if(breakOverlay) breakOverlay.classList.add('visible');
+    }
+  } else {
+    // Break phase
+    if(breakOverlay) breakOverlay.classList.add('visible');
+    const breakEl = document.getElementById('pomo-break-timer');
+    if(breakEl) breakEl.textContent = `${mins}m ${String(secs).padStart(2,'0')}s`;
+
+    if(remaining <= 0){
+      // Break over — back to work
+      startPomodoroPhase('work');
+      if(breakOverlay) breakOverlay.classList.remove('visible');
+    }
+  }
+}
+
 /* ═══ LOCK-IN MODE ═══ */
 export function enterLockIn(taskId){
   setLockedInTaskId(taskId);
@@ -156,6 +232,16 @@ export function enterLockIn(taskId){
   document.querySelector('.grimoire').classList.add('locked-in');
   document.getElementById('thought-catcher').classList.add('always-on');
   setFocusPeekMode(false);
+
+  // Start pomodoro
+  if(pomodoroEnabled){
+    startPomodoroPhase('work');
+  }
+
+  // Start body doubling
+  lastCheckinTime = Date.now(); // Don't check in immediately
+  if(bodyDoublingInterval) clearInterval(bodyDoublingInterval);
+  setBodyDoublingInterval(setInterval(showBodyDoubleCheckin, 60 * 1000)); // Check every minute
 
   // Get accumulated time on this task
   let task = null;
@@ -165,7 +251,7 @@ export function enterLockIn(taskId){
   });
   const priorMs = (task && task.focusedMs) || 0;
 
-  // Start timer showing accumulated + current session
+  // Start timer showing accumulated + current session + pomodoro
   const timerEl = document.getElementById('lockin-timer');
   if(lockinTimerInterval) clearInterval(lockinTimerInterval);
   const interval = setInterval(() => {
@@ -173,7 +259,22 @@ export function enterLockIn(taskId){
     const totalMs = priorMs + sessionMs;
     const mins = Math.floor(totalMs / 60000);
     const secs = Math.floor((totalMs % 60000) / 1000);
-    timerEl.textContent = `⏱ ${mins}m ${String(secs).padStart(2,'0')}s focused`;
+
+    if(pomodoroEnabled && pomodoroPhaseStart && pomodoroPhase === 'work'){
+      const elapsed = Date.now() - pomodoroPhaseStart;
+      const remaining = Math.max(0, pomodoroWorkMs - elapsed);
+      const rMins = Math.floor(remaining / 60000);
+      const rSecs = Math.floor((remaining % 60000) / 1000);
+      const pomoLabel = pomodoroCount > 0 ? ` • pomodoro #${pomodoroCount + 1}` : '';
+      timerEl.textContent = `🕯 ${rMins}:${String(rSecs).padStart(2,'0')} remaining • ${mins}m total${pomoLabel}`;
+    } else if(pomodoroEnabled && pomodoroPhase === 'break'){
+      timerEl.textContent = `☕ break time • ${mins}m total focused`;
+    } else {
+      timerEl.textContent = `⏱ ${mins}m ${String(secs).padStart(2,'0')}s focused`;
+    }
+
+    // Update pomodoro display
+    updatePomodoroDisplay();
   }, 1000);
   setLockinTimerInterval(interval);
   const initMins = Math.floor(priorMs / 60000);
@@ -222,6 +323,32 @@ export function populateLockinCard(taskId){
     });
     html += `</div>`;
   }
+
+  // Pomodoro burn bar
+  html += `<div class="pomo-section">
+    <div class="pomo-burn-track"><div class="pomo-burn-fill" id="pomo-burn" style="width:100%"></div></div>
+    <div class="pomo-controls">
+      <span class="pomo-toggle${pomodoroEnabled ? ' active' : ''}" id="pomo-toggle" title="Toggle pomodoro timer">
+        <i class="ti ti-flame" style="font-size:11px"></i> ${pomodoroEnabled ? 'ON' : 'OFF'}
+      </span>
+      <span class="pomo-toggle${bodyDoublingEnabled ? ' active' : ''}" id="bd-toggle" title="Toggle body doubling companion">
+        <i class="ti ti-campfire" style="font-size:11px"></i> companion ${bodyDoublingEnabled ? 'ON' : 'OFF'}
+      </span>
+      ${pomodoroCount > 0 ? `<span style="font-family:Cinzel,serif;font-size:8px;color:var(--gold-dim);letter-spacing:0.08em">${pomodoroCount} pomodoro${pomodoroCount > 1 ? 's' : ''}</span>` : ''}
+    </div>
+  </div>`;
+
+  // Body doubling message area
+  html += `<div class="body-double-msg" id="body-double-msg"></div>`;
+
+  // Pomodoro break overlay
+  html += `<div class="pomo-break-overlay" id="pomo-break-overlay">
+    <div class="pomo-break-icon"><i class="ti ti-coffee" style="font-size:18px"></i></div>
+    <div class="pomo-break-title">Rest, keeper</div>
+    <div class="pomo-break-text">You've earned a break. Stretch, hydrate, breathe.</div>
+    <div class="pomo-break-countdown" id="pomo-break-timer">5:00</div>
+    <span class="pomo-skip-break" id="pomo-skip-break">skip break</span>
+  </div>`;
 
   // Seal (complete) button
   html += `<div class="lockin-card-seal">
@@ -281,6 +408,44 @@ export function populateLockinCard(taskId){
   if(releaseBtn){
     releaseBtn.addEventListener('click', () => exitLockIn());
   }
+
+  // Pomodoro toggle
+  const pomoToggle = document.getElementById('pomo-toggle');
+  if(pomoToggle){
+    pomoToggle.addEventListener('click', () => {
+      setPomodoroEnabled(!pomodoroEnabled);
+      if(pomodoroEnabled && lockedInTaskId){
+        startPomodoroPhase('work');
+      }
+      populateLockinCard(taskId);
+    });
+  }
+
+  // Body doubling toggle
+  const bdToggle = document.getElementById('bd-toggle');
+  if(bdToggle){
+    bdToggle.addEventListener('click', () => {
+      setBodyDoublingEnabled(!bodyDoublingEnabled);
+      if(!bodyDoublingEnabled && bodyDoublingInterval){
+        clearInterval(bodyDoublingInterval);
+        setBodyDoublingInterval(null);
+      } else if(bodyDoublingEnabled && !bodyDoublingInterval){
+        lastCheckinTime = Date.now();
+        setBodyDoublingInterval(setInterval(showBodyDoubleCheckin, 60 * 1000));
+      }
+      populateLockinCard(taskId);
+    });
+  }
+
+  // Skip break
+  const skipBreak = document.getElementById('pomo-skip-break');
+  if(skipBreak){
+    skipBreak.addEventListener('click', () => {
+      startPomodoroPhase('work');
+      const breakOverlay = document.getElementById('pomo-break-overlay');
+      if(breakOverlay) breakOverlay.classList.remove('visible');
+    });
+  }
 }
 
 export function exitLockIn(){
@@ -305,6 +470,14 @@ export function exitLockIn(){
   if(lockinTimerInterval){ clearInterval(lockinTimerInterval); setLockinTimerInterval(null); }
   document.getElementById('lockin-timer').textContent = '';
 
+  // Reset pomodoro
+  setPomodoroPhase('work');
+  setPomodoroPhaseStart(null);
+  setPomodoroCount(0);
+
+  // Stop body doubling
+  if(bodyDoublingInterval){ clearInterval(bodyDoublingInterval); setBodyDoublingInterval(null); }
+
   updateFocusPanel();
 }
 
@@ -322,6 +495,7 @@ export function initFocus(){
     document.getElementById('scry-step-1').classList.remove('active');
     document.getElementById('scry-step-dump').classList.remove('active');
     document.getElementById('scry-step-checkin').classList.remove('active');
+    document.getElementById('scry-step-energy').classList.remove('active');
     document.getElementById('scry-step-2').classList.add('active');
     generateRecommendations();
     scryOverlayEl.classList.add('open');

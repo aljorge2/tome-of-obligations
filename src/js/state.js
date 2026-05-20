@@ -12,6 +12,7 @@ export const CLMEM_KEY      = 'tome_clmem_v1';
 export const ARCHIVE_KEY    = 'tome_archive_v1';
 export const SELFCARE_KEY   = 'tome_selfcare_v1';
 export const STRUGGLES_KEY  = 'tome_struggles_v1';
+export const ENERGY_KEY     = 'tome_energy_v1';
 
 /* ═══ REACTIVE STATE ═══ */
 export const state = {
@@ -40,6 +41,23 @@ export function setLockedInTaskId(val) { lockedInTaskId = val; }
 export function setLockinStartTime(val) { lockinStartTime = val; }
 export function setLockinTimerInterval(val) { lockinTimerInterval = val; }
 export function setFocusPeekMode(val) { focusPeekMode = val; }
+
+/* ═══ POMODORO STATE ═══ */
+export let pomodoroPhase = 'work'; // 'work' | 'break'
+export let pomodoroWorkMs = 25 * 60 * 1000;
+export let pomodoroBreakMs = 5 * 60 * 1000;
+export let pomodoroPhaseStart = null;
+export let pomodoroCount = 0;
+export let pomodoroEnabled = true;
+export let bodyDoublingEnabled = false;
+export let bodyDoublingInterval = null;
+
+export function setPomodoroPhase(val) { pomodoroPhase = val; }
+export function setPomodoroPhaseStart(val) { pomodoroPhaseStart = val; }
+export function setPomodoroCount(val) { pomodoroCount = val; }
+export function setPomodoroEnabled(val) { pomodoroEnabled = val; }
+export function setBodyDoublingEnabled(val) { bodyDoublingEnabled = val; }
+export function setBodyDoublingInterval(val) { bodyDoublingInterval = val; }
 
 /* ═══ PERSISTENCE ═══ */
 export function loadState() {
@@ -302,4 +320,40 @@ export function loadStruggles() {
 
 export function saveStruggles(data) {
   try { safeStorage.setItem(STRUGGLES_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+/* ═══ ENERGY ORACLE ═══ */
+export function loadEnergy() {
+  try { const r = safeStorage.getItem(ENERGY_KEY); if (r) return JSON.parse(r); } catch (e) {}
+  return { days: {} };
+}
+
+export function saveEnergy(data) {
+  try { safeStorage.setItem(ENERGY_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+export function setTodayEnergy(level) {
+  const data = loadEnergy();
+  const key = new Date().toISOString().slice(0,10);
+  if(!data.days[key]) data.days[key] = {};
+  data.days[key].level = level;
+  data.days[key].time = new Date().toISOString();
+  saveEnergy(data);
+}
+
+export function getCurrentEnergy() {
+  const data = loadEnergy();
+  const key = new Date().toISOString().slice(0,10);
+  return data.days[key] ? data.days[key].level : null;
+}
+
+export function getEnergyHistory(days) {
+  const data = loadEnergy();
+  const results = [];
+  const now = new Date();
+  for(let i = 0; i < days; i++){
+    const key = new Date(now.getTime() - i * 86400000).toISOString().slice(0,10);
+    results.push({ date: key, level: data.days[key] ? data.days[key].level : null });
+  }
+  return results;
 }

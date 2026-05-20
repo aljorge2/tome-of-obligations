@@ -276,3 +276,17 @@
   margin-left: 5px; vertical-align: middle;
   filter: drop-shadow(0 0 3px rgba(208,104,136,0.4));
 }
+
+/* ─── Delegated Badge ─── */
+.delegated-badge {
+  font-family: 'Cinzel', serif; font-size: 7px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 1px 5px; border-radius: 2px; margin-left: 6px;
+  vertical-align: middle; position: relative; top: -1px;
+  color: #5cc0dd; border: 1px solid rgba(40,153,187,0.35);
+  background: rgba(40,153,187,0.1);
+}
+
+/* ─── Delegate Prompt ─── */
+.delegate-input:focus { border-color: #5cc0dd; box-shadow: 0 0 6px rgba(40,153,187,0.2); }
+.delegate-confirm:hover { background: rgba(40,153,187,0.15); border-color: #5cc0dd; }

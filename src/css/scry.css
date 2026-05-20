@@ -302,3 +302,56 @@
   font-family: 'Crimson Text', serif; font-size: 12px;
   color: #c07060; font-style: italic;
 }
+
+/* ─── Energy Oracle ─── */
+.energy-choices {
+  display: flex; gap: 10px; margin-bottom: 0.5rem;
+}
+.energy-choice {
+  flex: 1; text-align: center;
+  padding: 14px 10px 12px;
+  background: rgba(15,5,10,0.5);
+  border: 1px solid rgba(140,60,80,0.2);
+  border-radius: 4px; cursor: pointer;
+  transition: all 0.25s;
+}
+.energy-choice:hover {
+  border-color: rgba(212,168,85,0.35);
+  background: rgba(212,168,85,0.06);
+}
+.energy-choice.selected {
+  border-color: rgba(224,128,64,0.6);
+  background: rgba(224,128,64,0.1);
+  box-shadow: 0 0 12px rgba(224,128,64,0.12);
+}
+.energy-icon {
+  color: #8a5040; margin-bottom: 6px;
+  transition: color 0.25s;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+}
+.energy-choice:hover .energy-icon { color: #d4a855; }
+.energy-choice.selected .energy-icon { color: #e08040; filter: drop-shadow(0 0 6px rgba(224,128,64,0.4)); }
+.energy-choice[data-energy="low"] .energy-icon { font-size: 18px; }
+.energy-choice[data-energy="high"] .energy-icon { font-size: 16px; }
+.energy-label {
+  font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 4px;
+  transition: color 0.25s;
+}
+.energy-choice.selected .energy-label { color: #e08040; }
+.energy-desc {
+  font-family: 'Crimson Text', serif; font-size: 11px;
+  font-style: italic; color: #6a4a55; line-height: 1.3;
+}
+
+/* Shadow items (avoidance detection) */
+.shadow-item {
+  font-family: 'Crimson Text', serif; font-size: 13px;
+  color: var(--text-secondary); padding: 3px 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.shadow-days {
+  font-size: 11px; color: #8a5040; font-style: italic;
+  margin-left: auto; white-space: nowrap;
+}

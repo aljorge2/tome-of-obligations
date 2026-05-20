@@ -1,10 +1,11 @@
 // src/js/scry.js — The Scry overlay system
 import { esc, uid, formatDuration } from './utils.js';
-import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES, WORK_SECS, HEARTH_SECS } from './constants.js';
+import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES, WORK_SECS, HEARTH_SECS, URGENCY_KEYWORDS } from './constants.js';
 import {
   state, saveState, loadTally, loadAddLog, getAvgTime,
   loadSwapMemory, saveSwapMemory, recordSwap, getSwapAdjustment,
-  loadTemplates, saveTemplates, logTaskAddition
+  loadTemplates, saveTemplates, logTaskAddition,
+  getCurrentEnergy, setTodayEnergy, loadEnergy
 } from './state.js';
 import { renderSection } from './tasks.js';
 import { updateFocusPanel } from './focus.js';
@@ -19,23 +20,29 @@ let currentWorkRecs = [];
 let currentHearthRecs = [];
 
 export function scoreTask(t){
-  const prioScore = { critical:50, high:35, medium:20, low:10 };
-  let score = prioScore[t.priority] || 5;
+  let score = 5;
   let reasons = [];
 
-  // Age bonus
+  // ── Keyword urgency (replaces manual priority) ──
+  const textLower = (t.text || '').toLowerCase();
+  const notesLower = (t.notes || '').toLowerCase();
+  const combined = textLower + ' ' + notesLower;
+  let urgencyHits = 0;
+  URGENCY_KEYWORDS.forEach(kw => {
+    if(combined.includes(kw)) urgencyHits++;
+  });
+  if(urgencyHits >= 2){ score += 40; reasons.push('urgent'); }
+  else if(urgencyHits === 1){ score += 20; reasons.push('time-sensitive'); }
+
+  // ── Age bonus ──
   if(t.createdAt){
     const ageDays = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
-    score += Math.min(ageDays * 1.5, 20);
+    score += Math.min(ageDays * 1.5, 25);
     if(ageDays >= 7) reasons.push('aging — ' + ageDays + ' days old');
     else if(ageDays >= 3) reasons.push('been waiting ' + ageDays + ' days');
   }
 
-  // Priority reason
-  if(t.priority === 'critical') reasons.push('critical priority');
-  else if(t.priority === 'high') reasons.push('high priority');
-
-  // Checklist near-completion bonus
+  // ── Checklist near-completion bonus ──
   const cl = t.checklist || [];
   if(cl.length >= 2){
     const done = cl.filter(c => c.done).length;
@@ -46,19 +53,44 @@ export function scoreTask(t){
     }
   }
 
-  // Unbound penalty
+  // ── Energy-aware scoring ──
+  const energy = getCurrentEnergy();
+  if(energy){
+    const est = t.estimate || 30;
+    if(energy === 'low'){
+      // Prefer short/easy tasks
+      if(est <= 15) { score += 10; if(!reasons.length) reasons.push('quick win for low energy'); }
+      else if(est >= 60) { score -= 15; }
+    } else if(energy === 'high'){
+      // Prefer deep/complex tasks
+      if(est >= 60) { score += 10; if(!reasons.length) reasons.push('deep work — ride the energy'); }
+      if(cl.length >= 3 && cl.filter(c=>c.done).length === 0) { score += 8; }
+    }
+  }
+
+  // ── Focused time momentum ──
+  if(t.focusedMs && t.focusedMs > 60000 && !t.done){
+    score += 8;
+    if(!reasons.length) reasons.push('you\'ve already invested time');
+  }
+
+  // ── Unbound penalty ──
   const isUnbound = (!cl.length) && (!t.notes || !t.notes.trim());
   if(isUnbound){
     score -= 20;
     reasons.push('needs breaking down');
   }
 
-  // Swap memory adjustment — learn from past swaps
+  // ── Swap memory adjustment ──
   if(t.id){
     const swapAdj = getSwapAdjustment(t.id);
     score += swapAdj;
     if(swapAdj > 0) reasons.unshift('you chose this before');
-    // Note: negative adjustment happens silently (task just ranks lower)
+  }
+
+  // ── Delegation status ──
+  if(t.delegatedTo){
+    score -= 30; // Delegated tasks should not be recommended
   }
 
   // Default reason
@@ -303,6 +335,44 @@ export function detectAvoidance(){
   return shadows;
 }
 
+/* ═══ ENERGY ORACLE ═══ */
+function populateEnergyOracle(){
+  const choices = document.getElementById('energy-choices');
+  const current = getCurrentEnergy();
+
+  // Highlight current selection
+  choices.querySelectorAll('.energy-choice').forEach(el => {
+    el.classList.toggle('selected', el.dataset.energy === current);
+    el.onclick = () => {
+      setTodayEnergy(el.dataset.energy);
+      choices.querySelectorAll('.energy-choice').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    };
+  });
+
+  // Show energy history (last 7 days)
+  const historyEl = document.getElementById('energy-history');
+  const energyData = loadEnergy();
+  const now = new Date();
+  let histHTML = '<div style="margin-top:12px;padding-top:8px;border-top:1px solid rgba(212,168,85,0.1)">';
+  histHTML += '<div style="font-family:Cinzel,serif;font-size:8px;letter-spacing:0.1em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:6px">Recent energy</div>';
+  histHTML += '<div style="display:flex;gap:6px;align-items:flex-end">';
+  for(let i = 6; i >= 0; i--){
+    const key = new Date(now.getTime() - i * 86400000).toISOString().slice(0,10);
+    const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(now.getTime() - i * 86400000).getDay()];
+    const level = energyData.days[key] ? energyData.days[key].level : null;
+    const h = level === 'high' ? 24 : level === 'medium' ? 16 : level === 'low' ? 8 : 3;
+    const color = level === 'high' ? '#e08040' : level === 'medium' ? '#d4a855' : level === 'low' ? '#8a6050' : 'rgba(80,40,50,0.3)';
+    const isToday = i === 0;
+    histHTML += `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">
+      <div style="width:100%;height:${h}px;background:${color};border-radius:2px;transition:height 0.3s${isToday ? ';box-shadow:0 0 6px '+color : ''}"></div>
+      <span style="font-size:8px;color:${isToday ? '#d4a855' : '#5a3a45'};font-family:Cinzel,serif">${dayName}</span>
+    </div>`;
+  }
+  histHTML += '</div></div>';
+  historyEl.innerHTML = histHTML;
+}
+
 export var openScry = function(){
   scryWorkPicks.clear();
   scryHearthPicks.clear();
@@ -435,6 +505,7 @@ export var openScry = function(){
   document.getElementById('scry-step-1').classList.add('active');
   document.getElementById('scry-step-dump').classList.remove('active');
   document.getElementById('scry-step-checkin').classList.remove('active');
+  document.getElementById('scry-step-energy').classList.remove('active');
   document.getElementById('scry-step-2').classList.remove('active');
   // Clear dump inputs
   document.querySelectorAll('.dump-input').forEach(i => i.value = '');
@@ -466,12 +537,21 @@ export function initScry(){
   document.getElementById('scry-next-checkin').addEventListener('click', () => {
     saveStrugglesEntry();
     document.getElementById('scry-step-checkin').classList.remove('active');
+    document.getElementById('scry-step-energy').classList.add('active');
+    populateEnergyOracle();
+  });
+  document.getElementById('scry-back-energy').addEventListener('click', () => {
+    document.getElementById('scry-step-energy').classList.remove('active');
+    document.getElementById('scry-step-checkin').classList.add('active');
+  });
+  document.getElementById('scry-next-energy').addEventListener('click', () => {
+    document.getElementById('scry-step-energy').classList.remove('active');
     document.getElementById('scry-step-2').classList.add('active');
-    generateRecommendations();
+    generateRecommendations(); // Re-generate with energy level applied
   });
   document.getElementById('scry-back-2').addEventListener('click', () => {
     document.getElementById('scry-step-2').classList.remove('active');
-    document.getElementById('scry-step-checkin').classList.add('active');
+    document.getElementById('scry-step-energy').classList.add('active');
   });
   document.getElementById('scry-commit-2').addEventListener('click', commitOaths);
   document.getElementById('scry-reshuffle').addEventListener('click', generateRecommendations);

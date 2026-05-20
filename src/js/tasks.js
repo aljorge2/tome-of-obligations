@@ -1,6 +1,6 @@
 // src/js/tasks.js — Core task CRUD and rendering
 import { esc, uid, formatDuration } from './utils.js';
-import { PRIORITIES, ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES, ESTIMATE_OPTIONS } from './constants.js';
+import { ALL_SECTIONS, SECTION_COLORS, SECTION_NAMES } from './constants.js';
 import {
   state, saveState, recordCompletion, logTaskAddition, getAvgTime,
   loadChecklistMemory, saveChecklistMemory, rememberChecklist, recallChecklist,
@@ -26,8 +26,8 @@ export function getClarity(task){
   else if(notes.trim().length >= 3) score += 0.25;
   // Has estimate
   if(task.estimate) score += 0.5;
-  // Has priority
-  if(task.priority) score += 0.25;
+  // Has focused time invested
+  if(task.focusedMs && task.focusedMs > 0) score += 0.25;
   // Cap at 3
   score = Math.min(score, 3);
   const level = score >= 2 ? 'clear' : score >= 1 ? 'partial' : 'vague';
@@ -120,10 +120,6 @@ export function buildTaskEl(sec, task){
   const item = document.createElement('div');
   item.className = 'task-item'+(task.done?' done':'');
   item.dataset.id = task.id;
-  const prioInfo = PRIORITIES.find(p=>p.key===task.priority);
-  const prioBadge = prioInfo
-    ? `<span class="priority-badge ${prioInfo.cls}" data-action="toggle-prio">${prioInfo.label}</span>`
-    : `<span class="priority-badge pp-none" data-action="toggle-prio" style="opacity:0.4;font-size:7px">✦ priority</span>`;
   const cl = task.checklist||[];
   const checkSummary = cl.length
     ? `<span style="font-size:11px;color:#6a4050;margin-left:8px;font-style:italic;letter-spacing:0.05em">[${cl.filter(c=>c.done).length}/${cl.length}]</span>` : '';
@@ -146,6 +142,15 @@ export function buildTaskEl(sec, task){
   const isUnbound = !task.done && (!cl.length) && (!task.notes || !task.notes.trim());
   const unboundBadge = isUnbound ? `<span class="unbound-badge" title="This task needs breaking down — add a checklist or notes to clarify">unbound</span>` : '';
 
+  // Passive auto-estimate badge — only shown when learned from time log
+  const learnedAvg = getAvgTime(task.text);
+  const estBadge = (learnedAvg && !task.done)
+    ? `<span class="estimate-badge" title="Learned from your past completions">~${Math.round(learnedAvg / 60000)}m</span>` : '';
+
+  // Delegated badge
+  const delegatedBadge = task.delegatedTo
+    ? `<span class="delegated-badge" title="Delegated to ${esc(task.delegatedTo)}">${esc(task.delegatedTo)}</span>` : '';
+
   // Notes
   const noteContent = task.notes ? `<div class="task-note-text">${esc(task.notes)}</div>` : `<div class="task-note-text" style="color:#4a2a35;font-size:12px">no notes yet — click edit to add</div>`;
 
@@ -153,23 +158,19 @@ export function buildTaskEl(sec, task){
     <div class="task-row" data-action="toggle-done">
       <div class="rune-box"><i class="ti ti-sparkles" style="font-size:10px"></i></div>
       <div class="task-main">
-        <span class="task-text">${esc(task.text)}</span>${prioBadge}${checkSummary}${ageBadge}${unboundBadge}
+        <span class="task-text">${esc(task.text)}</span>${checkSummary}${ageBadge}${unboundBadge}${estBadge}${delegatedBadge}
       </div>
     </div>
     <div class="task-actions">
       <span class="action-btn" data-action="begin-focus" style="color:rgba(208,104,136,0.5);border-color:rgba(208,104,136,0.2)"><i class="ti ti-focus-2"></i>focus</span>
       <span class="action-btn" data-action="edit-text"><i class="ti ti-pencil"></i>edit</span>
       <span class="action-btn" data-action="toggle-notes"><i class="ti ti-note"></i>notes</span>
-      <span class="action-btn" data-action="toggle-prio"><i class="ti ti-flag-3"></i>priority</span>
       <span class="action-btn" data-action="toggle-list"><i class="ti ti-list-check"></i>checklist</span>
+      <span class="action-btn" data-action="delegate"><i class="ti ti-send"></i>delegate</span>
       <span class="task-delete action-btn" data-action="delete"><i class="ti ti-skull"></i>banish</span>
     </div>
     <div class="task-note${task.showNotes?' visible':''}" id="note-${task.id}">
       ${noteContent}
-    </div>
-    <div class="priority-picker" id="pp-${task.id}">
-      ${PRIORITIES.map(p=>`<span class="pp-opt ${p.cls}" data-action="set-prio" data-prio="${p.key}">${p.label}</span>`).join('')}
-      <span class="pp-opt pp-none" data-action="set-prio" data-prio="">None</span>
     </div>
     <div class="checklist" id="cl-${task.id}" style="${task.showChecklist?'':'display:none'}">
       ${cl.map((c,ci)=>`
@@ -184,7 +185,7 @@ export function buildTaskEl(sec, task){
       </div>
     </div>`;
 
-  // --- Enhanced task rendering: clarity, estimate badge, estimate picker, breakdown, promote ---
+  // --- Enhanced task rendering: clarity, breakdown, promote ---
   if(!task.done){
     // Add clarity indicator after unbound badge (or where it would be)
     const mainEl = item.querySelector('.task-main');
@@ -195,31 +196,11 @@ export function buildTaskEl(sec, task){
       if(oldUnbound) oldUnbound.replaceWith(clarityEl);
       else mainEl.appendChild(clarityEl);
     }
-
-    // Add estimate badge
-    if(task.estimate){
-      const mainEl2 = item.querySelector('.task-main');
-      if(mainEl2){
-        const badge = document.createElement('span');
-        badge.className = 'estimate-badge';
-        badge.textContent = '~' + task.estimate + 'm';
-        badge.dataset.action = 'toggle-estimate';
-        mainEl2.appendChild(badge);
-      }
-    }
   }
 
-  // Add estimate button and breakdown prompt to action row
+  // Add breakdown button to action row (only if low clarity)
   const actionsRow = item.querySelector('.task-actions');
   if(actionsRow && !task.done){
-    // Estimate button
-    const estBtn = document.createElement('span');
-    estBtn.className = 'action-btn';
-    estBtn.dataset.action = 'toggle-estimate';
-    estBtn.innerHTML = '<i class="ti ti-clock"></i>time';
-    actionsRow.insertBefore(estBtn, actionsRow.querySelector('.task-delete'));
-
-    // Breakdown button (only if low clarity)
     const c = getClarity(task);
     if(c.level === 'vague'){
       const bdBtn = document.createElement('span');
@@ -228,19 +209,9 @@ export function buildTaskEl(sec, task){
       bdBtn.style.color = 'rgba(200,140,40,0.6)';
       bdBtn.style.borderColor = 'rgba(200,140,40,0.2)';
       bdBtn.innerHTML = '<i class="ti ti-puzzle"></i>break down';
-      actionsRow.insertBefore(bdBtn, actionsRow.querySelector('[data-action="toggle-prio"]'));
+      actionsRow.insertBefore(bdBtn, actionsRow.querySelector('[data-action="delegate"]'));
     }
   }
-
-  // Add estimate picker
-  const estPicker = document.createElement('div');
-  estPicker.className = 'estimate-picker';
-  estPicker.id = 'est-' + task.id;
-  estPicker.innerHTML = ESTIMATE_OPTIONS.map(o =>
-    `<span class="estimate-chip${task.estimate === o.mins ? ' active' : ''}" data-action="set-estimate" data-mins="${o.mins}">${o.label}</span>`
-  ).join('');
-  const ppEl = item.querySelector('.priority-picker');
-  if(ppEl) ppEl.after(estPicker);
 
   // Add promote buttons to checklist items
   const checkRows = item.querySelectorAll('.check-row');
@@ -278,9 +249,7 @@ export function buildTaskEl(sec, task){
         checkSectionCleared(sec);
       }
     }
-    else if(act==='toggle-prio'){ document.getElementById('pp-'+task.id).classList.toggle('open'); e.stopPropagation(); }
     else if(act==='begin-focus'){ enterLockIn(task.id); e.stopPropagation(); }
-    else if(act==='set-prio'){ taskObj.priority=action.dataset.prio||null; document.getElementById('pp-'+task.id).classList.remove('open'); renderSection(sec); saveState(); e.stopPropagation(); }
     else if(act==='toggle-list'){ taskObj.showChecklist=!taskObj.showChecklist; document.getElementById('cl-'+task.id).style.display=taskObj.showChecklist?'':'none'; saveState(); e.stopPropagation(); }
     else if(act==='toggle-notes'){
       e.stopPropagation();
@@ -372,17 +341,13 @@ export function buildTaskEl(sec, task){
         if(ev.key === 'Escape'){ input.removeEventListener('blur', commitEdit); renderSection(sec); }
       });
     }
-    // Enhanced actions: estimate, breakdown, promote
-    else if(act === 'toggle-estimate'){
-      document.getElementById('est-'+task.id).classList.toggle('open');
-      e.stopPropagation();
-    } else if(act === 'set-estimate'){
-      taskObj.estimate = parseInt(action.dataset.mins);
-      renderSection(sec); saveState();
-      e.stopPropagation();
-    } else if(act === 'toggle-breakdown'){
+    // Enhanced actions: breakdown, delegate, promote
+    else if(act === 'toggle-breakdown'){
       openBreakdownModal(sec, task.id);
       e.stopPropagation();
+    } else if(act === 'delegate'){
+      e.stopPropagation();
+      openDelegatePrompt(sec, task.id, item);
     } else if(act === 'promote-check'){
       const ci = parseInt(action.dataset.ci);
       const checkItem = taskObj.checklist[ci];
@@ -404,6 +369,49 @@ export function buildTaskEl(sec, task){
   });
 
   return item;
+}
+
+/* ═══ DELEGATION ═══ */
+function openDelegatePrompt(sec, taskId, taskEl){
+  const taskObj = state[sec].find(t => t.id === taskId);
+  if(!taskObj) return;
+  // Create inline prompt
+  const existing = taskEl.querySelector('.delegate-prompt');
+  if(existing){ existing.remove(); return; }
+  const prompt = document.createElement('div');
+  prompt.className = 'delegate-prompt';
+  prompt.innerHTML = `
+    <div style="padding:6px 10px 8px 36px;display:flex;align-items:center;gap:8px;background:rgba(40,153,187,0.05);border-radius:2px;margin:2px 0">
+      <span style="font-family:Cinzel,serif;font-size:8px;letter-spacing:0.08em;color:#5cc0dd;text-transform:uppercase">delegate to:</span>
+      <input class="delegate-input" placeholder="who?" style="flex:1;background:rgba(15,3,8,0.7);border:1px solid rgba(40,153,187,0.3);border-radius:2px;padding:3px 8px;font-family:Crimson Text,serif;font-size:13px;color:var(--text-primary);outline:none" />
+      <span class="delegate-confirm" style="font-family:Cinzel,serif;font-size:8px;letter-spacing:0.08em;color:#5cc0dd;cursor:pointer;padding:3px 8px;border:1px solid rgba(40,153,187,0.3);border-radius:2px;transition:all 0.2s">bind</span>
+    </div>
+  `;
+  const actionsRow = taskEl.querySelector('.task-actions');
+  if(actionsRow) actionsRow.after(prompt);
+  const input = prompt.querySelector('.delegate-input');
+  input.focus();
+  function commitDelegate(){
+    const person = input.value.trim();
+    if(!person) { prompt.remove(); return; }
+    // Mark task as delegated
+    taskObj.delegatedTo = person;
+    taskObj.delegatedAt = new Date().toISOString();
+    // Create a reminder subtask in the same section
+    const reminderText = `Tell ${person} about: ${taskObj.text}`;
+    state[sec].push({
+      id: uid(), text: reminderText, done: false, priority: null,
+      checklist: [], showChecklist: false, notes: `Delegated from task: "${taskObj.text}"`,
+      createdAt: new Date().toISOString()
+    });
+    logTaskAddition(reminderText, sec);
+    saveState(); renderSection(sec);
+  }
+  prompt.querySelector('.delegate-confirm').addEventListener('click', commitDelegate);
+  input.addEventListener('keydown', ev => {
+    if(ev.key === 'Enter') commitDelegate();
+    if(ev.key === 'Escape') prompt.remove();
+  });
 }
 
 /* ═══ INIT: add-input and clear-done handlers ═══ */

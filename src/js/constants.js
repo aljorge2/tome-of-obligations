@@ -1,10 +1,3 @@
-export const PRIORITIES = [
-  { key: 'critical', label: 'Critical', cls: 'p-critical' },
-  { key: 'high',     label: 'High',     cls: 'p-high' },
-  { key: 'medium',   label: 'Medium',   cls: 'p-medium' },
-  { key: 'low',      label: 'Low',      cls: 'p-low' },
-];
-
 export const WORK_SECS = ['lab', 'bio', 'time'];
 export const HEARTH_SECS = ['hearth', 'scrolls', 'forge', 'bonds'];
 export const ALL_SECTIONS = ['lab', 'bio', 'time', 'hearth', 'scrolls', 'forge', 'bonds'];
@@ -19,12 +12,11 @@ export const SECTION_COLORS = {
   hearth: '#9b50e0', scrolls: '#3da855', forge: '#2899bb', bonds: '#d08838'
 };
 
-export const ESTIMATE_OPTIONS = [
-  { label: '5m', mins: 5 },
-  { label: '15m', mins: 15 },
-  { label: '30m', mins: 30 },
-  { label: '1h', mins: 60 },
-  { label: '2h+', mins: 120 },
+// Keywords that signal urgency — auto-detected for priority scoring
+export const URGENCY_KEYWORDS = [
+  'urgent','asap','deadline','due','overdue','today','tonight','tomorrow',
+  'critical','blocking','blocker','waiting','expired','last chance','final',
+  'appointment','appt','meeting','interview','submission'
 ];
 
 export const SEC_KEYWORDS = {

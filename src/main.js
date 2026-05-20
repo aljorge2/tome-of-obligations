@@ -4,7 +4,7 @@ import './css/main.css';
 // Import modules
 import { showPersistenceWarning } from './js/storage.js';
 import { initState, updateTallyDisplay } from './js/state.js';
-import { renderSection } from './js/tasks.js';
+import { renderSection, initTasks } from './js/tasks.js';
 import { initFocus, updateFocusPanel } from './js/focus.js';
 import { initScry } from './js/scry.js';
 import { initWards } from './js/wards.js';
@@ -23,6 +23,7 @@ initState();
 ALL_SECTIONS.forEach(renderSection);
 
 // Initialize all feature modules
+initTasks();
 initFocus();
 initScry();
 initWards();

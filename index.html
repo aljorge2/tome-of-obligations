@@ -395,6 +395,38 @@
       </div>
     </div>
 
+    <!-- Step 1.9: Energy Oracle -->
+    <div class="scry-step" id="scry-step-energy">
+      <div class="scry-section">
+        <div class="scry-section-title">Energy Oracle</div>
+        <p style="font-family:'Crimson Text',serif;font-size:13px;color:#8a6070;font-style:italic;margin-bottom:1rem;">
+          How does your mana flow today? The tome will shape your oaths accordingly.
+        </p>
+        <div class="energy-choices" id="energy-choices">
+          <div class="energy-choice" data-energy="low">
+            <div class="energy-icon"><i class="ti ti-flame" style="font-size:22px"></i></div>
+            <div class="energy-label">Flickering</div>
+            <div class="energy-desc">Low energy — keep it light, quick wins only</div>
+          </div>
+          <div class="energy-choice" data-energy="medium">
+            <div class="energy-icon"><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i></div>
+            <div class="energy-label">Steady</div>
+            <div class="energy-desc">Normal flow — a balanced mix of tasks</div>
+          </div>
+          <div class="energy-choice" data-energy="high">
+            <div class="energy-icon"><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i><i class="ti ti-flame" style="font-size:22px"></i></div>
+            <div class="energy-label">Blazing</div>
+            <div class="energy-desc">High energy — tackle the deep, complex work</div>
+          </div>
+        </div>
+        <div class="energy-history" id="energy-history"></div>
+      </div>
+      <div class="scry-nav">
+        <button class="scry-btn scry-btn-secondary" id="scry-back-energy"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>
+        <button class="scry-btn scry-btn-primary" id="scry-next-energy">Commit Oaths <i class="ti ti-arrow-right" style="font-size:11px"></i></button>
+      </div>
+    </div>
+
     <!-- Step 2: Commit sworn oaths -->
     <div class="scry-step" id="scry-step-2">
       <div class="scry-section">
